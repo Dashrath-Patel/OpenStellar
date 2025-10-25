@@ -296,6 +296,41 @@ ${bountyData.skills.map(skill => `\`${skill}\``).join(', ')}
 }
 
 /**
+ * Format bounty bot comment
+ * This comment is added to GitHub issues to guide developers to the platform
+ */
+function formatBountyBotComment(bountyData) {
+    const platformUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const bountyUrl = `${platformUrl}/bounty/${bountyData.bountyId}`;
+    
+    return `## 🤖 OpenStellar Bounty Bot
+
+### 💰 This issue has a bounty of **${bountyData.payAmount || 0} XLM**!
+
+**Interested in earning this reward?** Here's how:
+
+1️⃣ **Visit the bounty page:** [${bountyUrl}](${bountyUrl})
+2️⃣ **Submit your proposal** - Tell us your approach and timeline
+3️⃣ **Get assigned** - Wait for the maintainer to review and accept
+4️⃣ **Start working** - Build your solution and create a PR
+5️⃣ **Get paid** - Once approved, funds are released via Stellar blockchain
+
+---
+
+### 📋 Quick Info
+- **Difficulty:** ${bountyData.difficulty || 'Not specified'}
+- **Skills needed:** ${bountyData.skills && bountyData.skills.length > 0 ? bountyData.skills.join(', ') : 'See description'}
+- **Deadline:** ${bountyData.endDate ? new Date(bountyData.endDate).toLocaleDateString() : 'Flexible'}
+
+### 🌟 New to OpenStellar?
+Browse more bounties: [${platformUrl}/explore](${platformUrl}/explore)
+
+---
+
+*🔒 Secure payments powered by [OpenStellar](${platformUrl}) - A decentralized bounty platform for open source*`;
+}
+
+/**
  * Get user's GitHub repositories
  * Fetches all repos where user has push access (can create issues)
  */
@@ -357,6 +392,7 @@ module.exports = {
     closeGitHubIssue,
     addLabelsToIssue,
     formatBountyIssueBody,
+    formatBountyBotComment,
     getUserRepositories,
     hasRepoAccess
 };

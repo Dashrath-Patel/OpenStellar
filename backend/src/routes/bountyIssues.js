@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { createGitHubIssue, hasRepoAccess, formatBountyIssueBody } = require('../github');
+const { 
+    createGitHubIssue, 
+    hasRepoAccess, 
+    formatBountyIssueBody,
+    formatBountyBotComment,
+    addGitHubComment
+} = require('../github');
 const { authenticateToken } = require('./auth');
 const User = require('../models/user');
 const BountyIssue = require('../models/bountyIssue');
@@ -130,6 +136,30 @@ router.post('/', authenticateToken, async (req, res) => {
             bountyIssue.status = 'pending_blockchain';
             await bountyIssue.save();
 
+            // Step 2.5: Add bot comment to guide developers
+            try {
+                const botComment = formatBountyBotComment({
+                    bountyId: bountyIssue._id,
+                    payAmount: bounty_amount,
+                    difficulty,
+                    skills,
+                    endDate: deadline
+                });
+
+                await addGitHubComment(
+                    user.githubAccessToken,
+                    owner,
+                    repo,
+                    githubIssue.number,
+                    botComment
+                );
+
+                console.log('✅ Bot comment added to GitHub issue');
+            } catch (commentError) {
+                // Don't fail the whole process if comment fails
+                console.warn('⚠️ Failed to add bot comment:', commentError.message);
+            }
+
         } catch (githubError) {
             console.error('❌ GitHub issue creation failed:', githubError.message);
             
@@ -252,8 +282,57 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 /**
+ * GET /api/bounty-issues/public/:id
+ * Get single bounty issue (PUBLIC - no auth required)
+ */
+router.get('/public/:id', async (req, res) => {
+    try {
+        const issue = await BountyIssue.findById(req.params.id)
+            .populate('creatorId', 'github avatar')
+            .populate('assigneeId', 'github avatar');
+        
+        if (!issue) {
+            return res.status(404).json({
+                success: false,
+                message: 'Bounty issue not found'
+            });
+        }
+        
+        // Return public-safe data
+        res.json({
+            success: true,
+            issue: {
+                _id: issue._id,
+                repoFullName: issue.repoFullName,
+                githubIssueNumber: issue.githubIssueNumber,
+                githubIssueUrl: issue.githubIssueUrl,
+                title: issue.title,
+                description: issue.description,
+                difficulty: issue.difficulty,
+                skills: issue.skills,
+                bountyAmount: issue.bountyAmount,
+                deadline: issue.deadline,
+                status: issue.status,
+                creatorId: issue.creatorId,
+                assigneeId: issue.assigneeId,
+                assignedAt: issue.assignedAt,
+                createdAt: issue.createdAt,
+                updatedAt: issue.updatedAt
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching public bounty:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch bounty issue',
+            error: error.message
+        });
+    }
+});
+
+/**
  * GET /api/bounty-issues/:id
- * Get single bounty issue
+ * Get single bounty issue (AUTHENTICATED)
  */
 router.get('/:id', authenticateToken, async (req, res) => {
     try {

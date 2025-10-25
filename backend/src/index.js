@@ -18,6 +18,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/project', require('./routes/project'));
 app.use('/api/github', require('./routes/github'));
 app.use('/api/bounty-issues', require('./routes/bountyIssues'));
+app.use('/api/applications', require('./routes/applications'));
 
 app.get('/api/', (request, response) => {
     response.send('OpenStellar Alive Check');

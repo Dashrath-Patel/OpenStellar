@@ -69,11 +69,23 @@ const bountyIssueSchema = new mongoose.Schema({
     },
     
     // Assignment Details
+    assignedApplication: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Application'
+    },
     assignedAt: {
         type: Date
     },
     completedAt: {
         type: Date
+    },
+    
+    // Blockchain Transactions
+    lockTransactionHash: {
+        type: String  // When funds locked on assignment
+    },
+    releaseTransactionHash: {
+        type: String  // When payment released
     },
     
     // Pull Request

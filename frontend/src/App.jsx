@@ -15,6 +15,7 @@ import MyBounties from './pages/my_bounties/MyBountiesPage';
 import Settings from './pages/settings/SettingsPage';
 import MuiDemoPage from './pages/demo/MuiDemoPage';
 import ReposShowcasePage from './pages/repos/ReposShowcasePage';
+import BountyDetailPage from './pages/bounty_detail/BountyDetailPage';
 
 // Auth pages
 import AuthCallback from './pages/auth/AuthCallback';
@@ -40,6 +41,7 @@ export default function App() {
         <Route path='/demo' element={<MuiDemoPage />} />
         <Route path='/auth/callback' element={<AuthCallback />} />
         <Route path='/repos' element={<ReposShowcasePage />} />
+        <Route path='/bounty/:id' element={<BountyDetailPage />} />
         <Route path='/NewBounty' element={<NewBounty />} />
         <Route path='/NewBounty/Preview' element={<PreviewNewBounty />} />
         <Route path='/ExploreBounties' element={<ExploreBounty />} />
