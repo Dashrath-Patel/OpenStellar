@@ -231,15 +231,37 @@ async function addLabelsToIssue(accessToken, owner, repo, issueNumber, labels) {
  * Format bounty issue body
  */
 function formatBountyIssueBody(bountyData) {
-    const difficultyLabels = ['🟢 Beginner', '🟡 Intermediate', '🔴 Advanced'];
-    const difficulty = difficultyLabels[bountyData.difficulty] || 'Unknown';
+    // Map difficulty levels
+    const difficultyMap = {
+        'easy': '🟢 Easy',
+        'medium': '🟡 Medium',
+        'hard': '🔴 Hard'
+    };
+    const difficulty = difficultyMap[bountyData.difficulty] || '❓ Unknown';
+    
+    // Format deadline
+    let deadlineText = 'No deadline set';
+    if (bountyData.endDate) {
+        try {
+            const date = new Date(bountyData.endDate);
+            if (!isNaN(date.getTime())) {
+                deadlineText = date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            }
+        } catch (e) {
+            deadlineText = 'No deadline set';
+        }
+    }
     
     return `
 ## 💰 Bounty Details
 
-**Reward:** ${bountyData.payAmount} XLM
+**Reward:** ${bountyData.payAmount || 0} XLM
 **Difficulty:** ${difficulty}
-**Deadline:** ${new Date(bountyData.endDate).toLocaleDateString()}
+**Deadline:** ${deadlineText}
 
 ## 📝 Description
 
@@ -266,8 +288,8 @@ ${bountyData.skills.map(skill => `\`${skill}\``).join(', ')}
 4. Submit a pull request referencing this issue
 5. Once merged, payment will be released automatically
 
-**Repository:** ${bountyData.gitRepo}
-**Platform:** [View on OpenStellar](${process.env.FRONTEND_URL}/bounty/${bountyData.bountyId})
+**Repository:** ${bountyData.gitRepo || 'Not specified'}
+**Platform:** [View on OpenStellar](${process.env.FRONTEND_URL || 'http://localhost:5173'}/bounty/${bountyData.bountyId})
 
 *This is an automated bounty issue created through OpenStellar*
 `;

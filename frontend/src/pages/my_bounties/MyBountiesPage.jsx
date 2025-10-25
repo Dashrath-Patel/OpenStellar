@@ -14,6 +14,12 @@ import {
   Stack,
   Grid,
   Alert,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material';
 import { MainLayout } from '../../components/layout';
 import { BountyGrid } from '../../components/bounty';
@@ -24,6 +30,7 @@ import WorkIcon from '@mui/icons-material/Work';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { apiCall, isAuthenticated, getCurrentUser } from '../../utils/auth';
 
 const MyBountiesPage = () => {
@@ -33,6 +40,9 @@ const MyBountiesPage = () => {
   const [bountyIssues, setBountyIssues] = useState([]);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [issueToDelete, setIssueToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const authenticated = isAuthenticated();
   const user = getCurrentUser();
 
@@ -78,6 +88,41 @@ const MyBountiesPage = () => {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  const handleDeleteClick = (issue) => {
+    setIssueToDelete(issue);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setIssueToDelete(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!issueToDelete) return;
+
+    setDeleteLoading(true);
+    try {
+      const response = await apiCall(`/api/bounty-issues/${issueToDelete._id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.success) {
+        // Remove from local state
+        setBountyIssues(prev => prev.filter(issue => issue._id !== issueToDelete._id));
+        setDeleteDialogOpen(false);
+        setIssueToDelete(null);
+      } else {
+        alert('Failed to delete: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error deleting issue:', error);
+      alert('Failed to delete bounty issue');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -221,17 +266,27 @@ const MyBountiesPage = () => {
                         </Stack>
                       </CardContent>
 
-                      <CardActions sx={{ p: 2, pt: 0 }}>
-                        {issue.githubIssueUrl && (
-                          <Button 
-                            size="small" 
-                            startIcon={<GitHubIcon />}
-                            href={issue.githubIssueUrl}
-                            target="_blank"
-                          >
-                            View on GitHub
-                          </Button>
-                        )}
+                      <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+                        <Box>
+                          {issue.githubIssueUrl && (
+                            <Button 
+                              size="small" 
+                              startIcon={<GitHubIcon />}
+                              href={issue.githubIssueUrl}
+                              target="_blank"
+                            >
+                              View on GitHub
+                            </Button>
+                          )}
+                        </Box>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteClick(issue)}
+                          title="Delete bounty issue"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
                       </CardActions>
                     </Card>
                   </Grid>
@@ -280,6 +335,36 @@ const MyBountiesPage = () => {
           )}
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+      >
+        <DialogTitle>Delete Bounty Issue?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{issueToDelete?.title}"?
+            <br /><br />
+            <strong>Note:</strong> This will only remove it from the OpenStellar database. 
+            If the GitHub issue still exists, you'll need to close it manually on GitHub.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleteLoading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={deleteLoading}
+            startIcon={deleteLoading ? <CircularProgress size={16} /> : <DeleteIcon />}
+          >
+            {deleteLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </MainLayout>
   );
 };

@@ -43,7 +43,6 @@ const navItems = [
   { label: 'Home', path: '/', icon: <HomeIcon /> },
   { label: 'Explore Bounties', path: '/ExploreBounties', icon: <ExploreIcon /> },
   { label: 'My Repositories', path: '/repos', icon: <FolderIcon />, requireAuth: true },
-  { label: 'New Bounty', path: '/NewBounty', icon: <AddCircleIcon /> },
   { label: 'In Progress', path: '/InProgress', icon: <WorkIcon /> },
   { label: 'My Bounties', path: '/MyBounties', icon: <WorkIcon /> },
   { label: 'Profile Settings', path: '/Settings', icon: <SettingsIcon /> },

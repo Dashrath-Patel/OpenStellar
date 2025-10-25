@@ -103,10 +103,11 @@ router.post('/', authenticateToken, async (req, res) => {
         try {
             const issueBody = formatBountyIssueBody({
                 description,
-                bountyAmount: bounty_amount,
+                payAmount: bounty_amount,
                 difficulty,
                 skills,
-                deadline,
+                endDate: deadline,
+                gitRepo: repo_full_name,
                 bountyId: bountyIssue._id
             });
 
@@ -376,6 +377,46 @@ router.patch('/:id/complete', authenticateToken, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to complete issue',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * DELETE /api/bounty-issues/:id
+ * Delete/cancel a bounty issue
+ */
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const issue = await BountyIssue.findById(req.params.id);
+        
+        if (!issue) {
+            return res.status(404).json({
+                success: false,
+                message: 'Bounty issue not found'
+            });
+        }
+        
+        // Only creator can delete
+        if (issue.creatorId.toString() !== req.user.userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the creator can delete this issue'
+            });
+        }
+        
+        // Delete from database
+        await BountyIssue.findByIdAndDelete(req.params.id);
+        
+        res.json({
+            success: true,
+            message: 'Bounty issue deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting issue:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete issue',
             error: error.message
         });
     }
