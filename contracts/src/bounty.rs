@@ -78,7 +78,7 @@ pub fn bounty_create(
     
     // increase bounty count
     e.storage().instance().set(&DataKey::BountyCount, &(bounty_count + 1));
-    e.storage().instance().bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+    e.storage().instance().extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
     // emit BountyCreate event
     e.events().publish((BOUNTY, symbol_short!("BCreate")), 
@@ -281,7 +281,7 @@ pub fn bounty_cancel(e: &Env,
 
     pay_token_client.transfer(
         &e.current_contract_address(), 
-        &creator, 
+        creator, 
         &(bounty.reward_amount as i128), 
     );
 
