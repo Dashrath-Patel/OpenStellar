@@ -104,20 +104,26 @@ const WalletButton = () => {
           textTransform: 'none',
           fontWeight: 600,
           borderWidth: 2,
+          color: 'text.primary',
+          borderColor: 'primary.main',
           '&:hover': {
             borderWidth: 2,
+            borderColor: 'primary.main',
+          },
+          '& .MuiButton-startIcon': {
+            color: 'primary.main',
           },
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 0.5 }}>
-          <Typography variant="caption" sx={{ lineHeight: 1, mb: 0.3 }}>
+          <Typography variant="caption" sx={{ lineHeight: 1, mb: 0.3, color: 'text.secondary' }}>
             {balanceLoading ? (
               <CircularProgress size={10} />
             ) : (
               `${parseFloat(balance).toFixed(2)} XLM`
             )}
           </Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
             {shortenAddress(walletAddress)}
           </Typography>
         </Box>

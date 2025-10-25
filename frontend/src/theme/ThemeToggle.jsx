@@ -18,9 +18,9 @@ const ThemeToggle = ({ sx = {} }) => {
     <Tooltip title={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}>
       <IconButton
         onClick={toggleTheme}
-        color="inherit"
         aria-label="toggle theme"
         sx={{
+          color: 'primary.main',
           ...sx,
         }}
       >

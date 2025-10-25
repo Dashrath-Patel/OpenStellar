@@ -82,12 +82,17 @@ const CategoryChip = ({ icon, label, count }) => {
       icon={icon}
       label={`${label} (${count})`}
       variant="outlined"
+      color="primary"
       sx={{
         borderRadius: 2,
         py: 2.5,
         px: 1,
         '& .MuiChip-label': {
           fontWeight: 600,
+          color: 'text.primary',
+        },
+        '& .MuiChip-icon': {
+          color: 'primary.main',
         },
       }}
     />

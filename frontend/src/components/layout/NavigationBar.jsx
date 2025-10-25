@@ -221,6 +221,9 @@ const NavigationBar = ({ walletButton = null }) => {
                       color: isActive(item.path)
                         ? 'primary.contrastText'
                         : 'text.primary',
+                      '& .MuiButton-startIcon': {
+                        color: 'inherit',
+                      },
                     }}
                   >
                     {item.label}
@@ -234,8 +237,8 @@ const NavigationBar = ({ walletButton = null }) => {
               <ThemeToggle />
               {!isMobile && (
                 <IconButton
-                  color="inherit"
                   onClick={() => navigate('/Settings')}
+                  sx={{ color: 'primary.main' }}
                 >
                   <SettingsIcon />
                 </IconButton>
