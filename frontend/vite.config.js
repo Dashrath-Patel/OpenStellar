@@ -8,5 +8,22 @@ export default defineConfig({
   root: '',
   build: {
     outDir: './build'
+  },
+  define: {
+    'global': 'globalThis',
+    'Buffer': ['buffer', 'Buffer'],
+  },
+  resolve: {
+    alias: {
+      'global': 'globalThis',
+      'buffer': 'buffer/',
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
   }
 });
