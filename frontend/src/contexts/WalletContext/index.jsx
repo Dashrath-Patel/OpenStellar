@@ -1,35 +1,62 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-// NOTE: the published repo for `stellar-wallets-kit` contains source files but no built
-// `index.mjs` entry. Vite cannot resolve the package main field in that state, so import
-// the library entry point directly from the package `src` folder which contains the
-// TypeScript/JS exports. Vite will transform these files.
-import { StellarWalletsKit, WalletNetwork, WalletType } from 'stellar-wallets-kit/src';
+import { StellarWalletsKit, WalletNetwork, allowAllModules, FREIGHTER_ID } from '@creit.tech/stellar-wallets-kit';
+import * as StellarSdk from '@stellar/stellar-sdk';
 import { useGlobal } from '../GlobalContext';
-import { networkConfig } from './config';
+import { networkConfig, DEFAULT_NETWORK_ID } from './config';
+import { 
+    createServer, 
+    fetchNativeBalance, 
+    fetchAccountBalances 
+} from '../../lib/stellar/horizonQueries';
 
 
 export const WalletContext = createContext();
 
 export const WalletProvider = (props) => {
     const { chainId } = useGlobal();
-    const configuredChainId = useMemo(() => parseInt(networkConfig[chainId].chainId, 16), [chainId]);
     const [isConnected, setIsConnected] = useState(false);
     const [walletAddress, setWalletAddress] = useState('');
+    const [currentNetwork, setCurrentNetwork] = useState(DEFAULT_NETWORK_ID);
+    const [balance, setBalance] = useState('0');
+    const [balanceLoading, setBalanceLoading] = useState(false);
     
-    const kit = new StellarWalletsKit({
-        network: WalletNetwork.FUTURENET,
-        selectedWallet: WalletType.FREIGHTER,
-    });
+    // Get network configuration
+    const activeNetworkConfig = networkConfig[currentNetwork] || networkConfig[DEFAULT_NETWORK_ID];
+    
+    // Create Stellar Server instance for the current network using proper helper
+    const server = useMemo(() => {
+        return createServer(activeNetworkConfig);
+    }, [activeNetworkConfig]);
+    
+    // Create kit instance with configurable network
+    const kit = useMemo(() => {
+        try {
+            console.log('🌐 Initializing wallet with network:', activeNetworkConfig.networkName);
+            const walletKit = new StellarWalletsKit({
+                network: activeNetworkConfig.walletNetwork,
+                selectedWalletId: undefined, // Don't auto-select any wallet
+                modules: allowAllModules(),
+            });
+            console.log('✅ StellarWalletsKit initialized successfully');
+            console.log('📡 Network:', activeNetworkConfig.networkName);
+            console.log('🔗 Network Passphrase:', activeNetworkConfig.networkPassphrase);
+            return walletKit;
+        } catch (error) {
+            console.error('❌ Failed to initialize StellarWalletsKit:', error);
+            return null;
+        }
+    }, [currentNetwork, activeNetworkConfig]);
 
-    const setSelectedWallet = (selectedWallet) => {
-        window.localStorage.setItem('selectedWallet', selectedWallet);
+    const setSelectedWallet = (walletId) => {
+        window.localStorage.setItem('selectedWallet', walletId);
     };
 
     const getSelectedWallet = () => {
         return window.localStorage.getItem('selectedWallet');
     }
     
-    const [walletObj, setWalletObj] = useState ({
+    // Wallet object for legacy compatibility
+    const [walletObj, setWalletObj] = useState({
         isConnected: async() => {
             return isConnected;
         },
@@ -39,106 +66,277 @@ export const WalletProvider = (props) => {
         },
 
         getUserInfo: async() => {
-            return await kit.getPublicKey();
+            try {
+                if (!kit) {
+                    console.error('Kit not initialized');
+                    return '';
+                }
+                const { address } = await kit.getAddress();
+                return address;
+            } catch (error) {
+                console.error('getUserInfo error:', error);
+                return '';
+            }
         },
 
-        signTransaction: async(tx, opts) => {
-            return await kit.sign({
-                xdr: tx,
-                network: WalletNetwork.FUTURENET,
-                publicKey: opts?.accountToSign ? opts?.accountToSign : await kit.getPublicKey()
-            });
+        signTransaction: async(xdr, opts) => {
+            try {
+                if (!kit) {
+                    throw new Error('Kit not initialized');
+                }
+                
+                // Use the official API with correct network passphrase
+                const { signedTxXdr } = await kit.signTransaction(xdr, {
+                    address: opts?.accountToSign,
+                    networkPassphrase: opts?.networkPassphrase || activeNetworkConfig.networkPassphrase,
+                });
+                
+                return signedTxXdr;
+            } catch (error) {
+                console.error('signTransaction error:', error);
+                throw error;
+            }
         }
     });
 
-    useEffect (() => {
-        setWalletObj ((prevState) => {
-            return {
-                ...prevState,
-                isConnected: async() => {
-                    return isConnected;
-                }
-            }
-        });
-    }, [isConnected]);
-
-    const syncWallet = async (selectedWallet) => {
-        let publicKey = '';
-
-        if (selectedWallet === WalletType.WALLET_CONNECT) {
-            try {
-                await kit.startWalletConnect({
-                    name: 'OpenStellar',
-                    description: 'OpenStellar WebApp',
-                    url: 'https://www.sorobounty.com/',
-                    icons: ['URL_OF_ICON'],
-                    projectId: 'openstellar-c9d7d',
-                });
-
-                const sessions = await kit.getSessions();
-                if (sessions.length) {
-                    await kit.setSession(sessions[0]?.id);
-                } else {
-                    await kit.connectWalletConnect();
-                }
-
-                publicKey = await kit?.getWalletConnectPublicKey();
-            } catch (error) {
-                console.error(error);
-            }
-        } else {
-            await kit.setWallet(selectedWallet);
-            publicKey = await kit.getPublicKey();
+    // Function to fetch account balance using proper Horizon query
+    const fetchBalance = async (address) => {
+        if (!address) {
+            console.log('No address provided for balance fetch');
+            return;
         }
-
-        setSelectedWallet(selectedWallet);
-        setIsConnected(true);
-        setWalletAddress(publicKey);
+        
+        setBalanceLoading(true);
+        try {
+            console.log('💰 Fetching balance for:', address);
+            console.log('📡 Using Horizon:', activeNetworkConfig.horizonUrl || activeNetworkConfig.rpcUrl);
+            
+            // Use proper Horizon query function
+            const nativeBalance = await fetchNativeBalance(server, address);
+            
+            setBalance(nativeBalance);
+            console.log('✅ Balance fetched:', nativeBalance, 'XLM');
+        } catch (error) {
+            console.error('❌ Error fetching balance:', error);
+            
+            // Provide helpful error messages
+            if (error.message.includes('not funded')) {
+                console.log('⚠️ Account not found - may need funding on', activeNetworkConfig.networkName);
+                setBalance('Account not funded');
+            } else {
+                console.log('⚠️ Error:', error.message);
+                setBalance('Error loading balance');
+            }
+        } finally {
+            setBalanceLoading(false);
+        }
     };
 
+    useEffect(() => {
+        setWalletObj((prevState) => ({
+            ...prevState,
+            isConnected: async() => {
+                return isConnected;
+            }
+        }));
+    }, [isConnected]);
+
+    // Connect wallet function following official documentation
     const connectWallet = async () => {
-        await kit.openModal({
-            onWalletSelected: async (option) => {
-                syncWallet(option.type);
-            },
-        });
+        try {
+            if (!kit) {
+                console.error('Kit not initialized');
+                alert('Wallet kit failed to initialize. Please refresh the page.');
+                return;
+            }
+
+            // Try to close any existing modal first
+            try {
+                const existingModal = document.querySelector('stellar-wallets-modal');
+                if (existingModal) {
+                    console.log('Found existing modal, attempting to remove...');
+                    existingModal.remove();
+                }
+            } catch (e) {
+                console.log('No existing modal to close');
+            }
+
+            console.log('Opening wallet modal...');
+            console.log('Kit state:', kit);
+            console.log('Available modules:', kit.modules);
+            
+            // Following official documentation pattern exactly
+            await kit.openModal({
+                onWalletSelected: async (option) => {
+                    try {
+                        console.log('🎉 Wallet selected callback triggered!');
+                        console.log('Selected option:', option);
+                        console.log('Option ID:', option.id);
+                        console.log('Option name:', option.name);
+                        
+                        // Set the wallet first
+                        console.log('Setting wallet...');
+                        await kit.setWallet(option.id);
+                        console.log('✅ Wallet set to:', option.id);
+                        
+                        // Get the address using official API
+                        console.log('Getting address...');
+                        const { address } = await kit.getAddress();
+                        console.log('✅ Address retrieved:', address);
+                        
+                        // Update state
+                        setSelectedWallet(option.id);
+                        setIsConnected(true);
+                        setWalletAddress(address);
+                        
+                        // Fetch balance after connecting
+                        await fetchBalance(address);
+                        
+                        console.log('🚀 Wallet connected successfully!');
+                        alert(`Wallet connected: ${address.substring(0, 10)}...`);
+                    } catch (error) {
+                        console.error('❌ Error in onWalletSelected:', error);
+                        alert(`Failed to connect: ${error.message}`);
+                    }
+                },
+                onClosed: (error) => {
+                    if (error) {
+                        console.error('Modal closed with error:', error);
+                    } else {
+                        console.log('Modal closed by user (no wallet selected)');
+                    }
+                },
+                modalTitle: 'Connect Your Wallet',
+                notAvailableText: 'Not installed'
+            });
+            
+            console.log('Modal setup complete');
+        } catch (error) {
+            console.error('connectWallet error:', error);
+            
+            // If modal is already open, try to find and show it
+            if (error.message.includes('already open')) {
+                console.log('Modal already open, trying to bring it to front...');
+                const modal = document.querySelector('stellar-wallets-modal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    modal.style.zIndex = '999999';
+                    modal.style.position = 'fixed';
+                    console.log('Modal should now be visible');
+                }
+            } else {
+                alert(`Error opening wallet modal: ${error.message}`);
+            }
+        }
     }
 
     const disconnectWallet = async () => {
-        let selectedWallet = getSelectedWallet();
+        try {
+            const selectedWallet = getSelectedWallet();
+            console.log('Disconnecting wallet:', selectedWallet);
 
-        if (selectedWallet === WalletType.WALLET_CONNECT) {
-            const sessions = await kit.getSessions();
-            console.log('session:', sessions)
-
-            if (sessions.length) {
-                await kit.closeSession(sessions[0]?.id);
-            } else {
-                console.log('Not connected!');
-            }
+            // Clear state
+            setSelectedWallet(null);
+            setIsConnected(false);
+            setWalletAddress('');
+            setBalance('0');
+            
+            window.localStorage.removeItem('selectedWallet');
+            console.log('Wallet disconnected successfully');
+        } catch (error) {
+            console.error('disconnectWallet error:', error);
         }
-
-        setSelectedWallet(null);
-        setIsConnected(false);
-        setWalletAddress('');
     }
-
-    useEffect(() => {
-        let selectedWallet = getSelectedWallet();
-
-        if (selectedWallet !== null) {
-            syncWallet(selectedWallet);
+    
+    // Function to switch networks
+    const switchNetwork = (networkId) => {
+        if (networkConfig[networkId]) {
+            console.log('🔄 Switching to network:', networkConfig[networkId].networkName);
+            
+            // Disconnect if currently connected
+            if (isConnected) {
+                disconnectWallet();
+            }
+            
+            // Update network
+            setCurrentNetwork(networkId);
+            window.localStorage.setItem('selectedNetwork', networkId.toString());
+            
+            alert(`Switched to ${networkConfig[networkId].networkName}. Please reconnect your wallet.`);
+        } else {
+            console.error('Invalid network ID:', networkId);
         }
-    }, []);
+    };
+
+    // Auto-reconnect on page load if wallet was previously connected
+    useEffect(() => {
+        // Load saved network preference
+        const savedNetwork = window.localStorage.getItem('selectedNetwork');
+        if (savedNetwork && networkConfig[parseInt(savedNetwork)]) {
+            setCurrentNetwork(parseInt(savedNetwork));
+        }
+        
+        const autoConnect = async () => {
+            try {
+                const selectedWallet = getSelectedWallet();
+                
+                if (selectedWallet && kit) {
+                    console.log('Auto-connecting to:', selectedWallet);
+                    
+                    await kit.setWallet(selectedWallet);
+                    const { address } = await kit.getAddress();
+                    
+                    setIsConnected(true);
+                    setWalletAddress(address);
+                    
+                    // Fetch balance on auto-reconnect
+                    await fetchBalance(address);
+                    
+                    console.log('Auto-connected successfully');
+                }
+            } catch (error) {
+                console.error('Auto-connect failed:', error);
+                // Clear invalid stored wallet
+                window.localStorage.removeItem('selectedWallet');
+            }
+        };
+
+        if (kit) {
+            autoConnect();
+        }
+    }, [kit]);
 
     return (
-        <WalletContext.Provider value={{ connectWallet, disconnectWallet, isConnected, walletAddress, walletObj }}>
+        <WalletContext.Provider value={{ 
+            connectWallet, 
+            disconnectWallet, 
+            isConnected, 
+            walletAddress, 
+            balance,
+            balanceLoading,
+            fetchBalance,
+            walletObj,
+            currentNetwork,
+            networkConfig: activeNetworkConfig,
+            switchNetwork,
+            availableNetworks: networkConfig,
+        }}>
             {props.children}
         </WalletContext.Provider>
     );
 }
 
 export const useCustomWallet = () => {
-    const dataManager = useContext(WalletContext);
-    return dataManager || [{}];
+    const context = useContext(WalletContext);
+    if (!context) {
+        console.warn('useCustomWallet must be used within WalletProvider');
+        return {
+            connectWallet: async () => {},
+            disconnectWallet: async () => {},
+            isConnected: false,
+            walletAddress: '',
+            walletObj: {}
+        };
+    }
+    return context;
 }

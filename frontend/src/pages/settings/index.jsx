@@ -16,6 +16,7 @@ import MainHeader from '../../components/menu/MainHeader';
 import HelpButton from '../../components/menu/HelpButton';
 import WarningMsg from '../../components/WarningMsg';
 import AvatarCrop from '../../components/AvatarCrop';
+import WalletBalance from '../../components/WalletBalance';
 import useBackend from '../../hooks/useBackend';
 import { IsSmMobile, fadeInUp } from '../../utils';
 
@@ -114,6 +115,12 @@ const SettingsBody = () => {
                     />
                   </div>
                 </div>
+                
+                {/* Wallet Balance Display */}
+                <div className='w-full pb-5'>
+                  <WalletBalance />
+                </div>
+
                 <div className='w-full pb-3'>
                   <div className='input-form-control'>
                     <label className='input-label'>Name</label>

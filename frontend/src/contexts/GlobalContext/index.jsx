@@ -7,11 +7,15 @@ export const GlobalContext = createContext();
 
 export const GlobalProvider = ({ children }) => {
     const [chainIndex, setChainIndex] = useState(1);
-    const [chainId, setChainId] = useState(0);
+    const [chainId, setChainId] = useState(2007); // Default to Futurenet chainId
 
     useEffect(() => {
-        let keys = Object.keys(networkConfig);
-        setChainId(parseInt(networkConfig[keys[chainIndex]].chainId, 16));
+        if (networkConfig) {
+            let keys = Object.keys(networkConfig);
+            if (keys[chainIndex] && networkConfig[keys[chainIndex]]) {
+                setChainId(parseInt(networkConfig[keys[chainIndex]].chainId, 16));
+            }
+        }
     }, [chainIndex]);
     
     const refreshPage = () => {
