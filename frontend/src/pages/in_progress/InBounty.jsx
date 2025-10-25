@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Reveal } from 'react-awesome-reveal';
-import { useNavigate } from '@reach/router';
+import { useNavigate } from 'react-router-dom';
 
 import useBackend from '../../hooks/useBackend';
 import { numberWithCommas, fadeInUp, 

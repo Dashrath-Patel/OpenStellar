@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Scrollbars } from 'react-custom-scrollbars';
+import { Scrollbars } from 'react-custom-scrollbars-2';
 import { toast } from 'react-toastify';
-import { useNavigate, useLocation } from '@reach/router';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useCustomWallet } from '../../contexts/WalletContext';
 import Subheader from '../../components/menu/SubHeader';

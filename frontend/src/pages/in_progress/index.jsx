@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Scrollbars } from 'react-custom-scrollbars';
+import { Scrollbars } from 'react-custom-scrollbars-2';
 import { Reveal } from 'react-awesome-reveal';
 
 import { useCustomWallet } from '../../contexts/WalletContext';

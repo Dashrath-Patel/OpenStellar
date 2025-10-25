@@ -1,5 +1,5 @@
 import { Reveal } from 'react-awesome-reveal';
-import { useNavigate } from '@reach/router';
+import { useNavigate } from 'react-router-dom';
 import { numberWithCommas, fadeInUp, 
   shortenAddress, getBountyStatus, getType, getLevel, getTopic, getTimeDifference } from '../../utils';
 

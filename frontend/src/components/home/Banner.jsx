@@ -1,6 +1,6 @@
 import React from 'react';
 import Reveal from 'react-awesome-reveal';
-import { Link } from '@reach/router';
+import { Link } from 'react-router-dom';
 import SubHeader from '../menu/SubHeader';
 import ColorGroup from './ColorGroup';
 import { fadeInUp, fadeIn } from '../../utils';

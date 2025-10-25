@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Reveal } from 'react-awesome-reveal';
-import { useNavigate } from '@reach/router';
+import { useNavigate } from 'react-router-dom';
 import { toast} from 'react-toastify';
 import { useCustomWallet } from '../../contexts/WalletContext';
 import { useContract } from '../../contexts/ContractContext';

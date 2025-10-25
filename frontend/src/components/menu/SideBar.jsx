@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from '@reach/router';
+import { Link } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
 import Avatar from '../Avatar';
 import ConnectWallet from './ConnectWallet';

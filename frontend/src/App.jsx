@@ -1,59 +1,50 @@
 import { useEffect } from 'react';
-import { Router, Location, Redirect } from '@reach/router';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.scss';
 
 import ScrollToTopBtn from './components/menu/ScrollToTop';
-import HomePage from './pages/home';
-import NewBounty from './pages/new_bounty/';
+
+// New MUI-based pages
+import HomePage from './pages/home/NewHomePage';
+import ExploreBounty from './pages/explore_bounties/NewExploreBounties';
+import NewBounty from './pages/new_bounty/NewBountyPage';
+import InProgress from './pages/in_progress/InProgressPage';
+import MyBounties from './pages/my_bounties/MyBountiesPage';
+import Settings from './pages/settings/SettingsPage';
+import MuiDemoPage from './pages/demo/MuiDemoPage';
+
+// Old pages (kept for detail views temporarily)
 import PreviewNewBounty from './pages/new_bounty/PreviewNewBounty';
-import ExploreBounty from './pages/explore_bounties/';
 import ExBountyListing from './pages/explore_bounties/ExBountyListing';
-import InProgress from './pages/in_progress/';
 import InBountyListing from './pages/in_progress/InBountyListing';
-import MyBounties from './pages/my_bounties/';
 import MyBountiesListing from './pages/my_bounties/MyBountiesListing';
-import Settings from './pages/settings/';
 
-const PosedRouter = ({ children }) => (
-  <Location>
-    {({ location }) => (
-      <div id='routerhang'> 
-        <div key={location.key}>
-          <Router location={location}>
-            {children}
-          </Router>
-        </div>
-      </div>
-    )}
-  </Location>
-);
-
-export const ScrollTop = ({ children, location }) => {
-  useEffect(() => window.scrollTo(0, 0), [location]);
-  return children;
+function ScrollTop() {
+  const location = useLocation();
+  useEffect(() => window.scrollTo(0, 0), [location.pathname]);
+  return null;
 }
 
 export default function App() {
   return (
     <div className='app'>
-      <PosedRouter>
-        <ScrollTop path='/'>
-          <HomePage exact path='/'>
-            <Redirect to='/' />
-          </HomePage>
-          <NewBounty path='NewBounty' />
-          <PreviewNewBounty path='NewBounty/Preview' />
-          <ExploreBounty path='ExploreBounties' />
-          <ExBountyListing path='ExploreBounties/:id' />
-          <InProgress path='InProgress' />
-          <InBountyListing path='InProgress/:id' />
-          <MyBounties path='MyBounties' />
-          <MyBountiesListing path='MyBounties/:id' />
-          <Settings path='Settings' />
-        </ScrollTop>
-      </PosedRouter>
+      <ScrollTop />
+      <Routes>
+        <Route path='/' element={<HomePage />} />
+        <Route path='/demo' element={<MuiDemoPage />} />
+        <Route path='/NewBounty' element={<NewBounty />} />
+        <Route path='/NewBounty/Preview' element={<PreviewNewBounty />} />
+        <Route path='/ExploreBounties' element={<ExploreBounty />} />
+        <Route path='/ExploreBounties/:id' element={<ExBountyListing />} />
+        <Route path='/InProgress' element={<InProgress />} />
+        <Route path='/InProgress/:id' element={<InBountyListing />} />
+        <Route path='/MyBounties' element={<MyBounties />} />
+        <Route path='/MyBounties/:id' element={<MyBountiesListing />} />
+        <Route path='/Settings' element={<Settings />} />
+        <Route path='*' element={<Navigate to='/' replace />} />
+      </Routes>
       <ScrollToTopBtn />
       <ToastContainer
         position='top-right'

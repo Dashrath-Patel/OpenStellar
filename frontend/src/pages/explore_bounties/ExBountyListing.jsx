@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Scrollbars } from 'react-custom-scrollbars';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Scrollbars } from 'react-custom-scrollbars-2';
+import { Reveal } from 'react-awesome-reveal';
 import { toast } from 'react-toastify';
-import { useParams, useNavigate } from '@reach/router';
+import { useParams, useNavigate } from 'react-router-dom';
 import MainHeader from '../../components/menu/MainHeader';
 import HelpButton from '../../components/menu/HelpButton';
 import Subheader from '../../components/menu/SubHeader';

@@ -1,4 +1,3 @@
-import { Section } from 'react-scroll-section';
 import MainHeader from '../../components/menu/MainHeader';
 import Banner from '../../components/home/Banner';
 import './home.scss';
@@ -11,9 +10,9 @@ const HomePage = () => {
       </div>
       <div className='home h-full'>
         <MainHeader />
-        <Section id='section1' className='h-full overflow-auto'>
+        <div id='section1' className='h-full overflow-auto'>
           <Banner />
-        </Section>
+        </div>
       </div>
     </div>
   );

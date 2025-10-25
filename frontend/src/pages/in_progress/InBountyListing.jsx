@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useParams, useNavigate } from '@reach/router';
-import Scrollbars from 'react-custom-scrollbars';
+import { useParams, useNavigate } from 'react-router-dom';
+import Scrollbars from 'react-custom-scrollbars-2';
 import { toast } from 'react-toastify';
 
 import { useCustomWallet } from '../../contexts/WalletContext';

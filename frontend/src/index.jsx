@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { LocationProvider } from '@reach/router';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { ThemeProvider } from './theme';
 import { GlobalProvider } from './contexts/GlobalContext';
 import { ReduxContext } from './contexts/ReduxContext';
 import { WalletProvider } from './contexts/WalletContext';
@@ -12,17 +13,19 @@ import './index.css';
 import './style.scss';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <LocationProvider>
-    <GlobalProvider>
-      <ReduxContext>
-        <WalletProvider>
-          <ContractProvider>
-            <React.StrictMode>
-              <App />
-            </React.StrictMode>
-          </ContractProvider>
-        </WalletProvider>
-      </ReduxContext>
-    </GlobalProvider>    
-  </LocationProvider>
+  <React.StrictMode>
+    <ThemeProvider>
+      <Router>
+        <GlobalProvider>
+          <ReduxContext>
+            <WalletProvider>
+              <ContractProvider>
+                <App />
+              </ContractProvider>
+            </WalletProvider>
+          </ReduxContext>
+        </GlobalProvider>    
+      </Router>
+    </ThemeProvider>
+  </React.StrictMode>
 );
