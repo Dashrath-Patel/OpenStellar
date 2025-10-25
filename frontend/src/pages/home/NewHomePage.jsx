@@ -23,12 +23,14 @@ import {
   Code as CodeIcon,
   Palette as DesignIcon,
   Description as DocsIcon,
+  GitHub as GitHubIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../../components/layout';
 import { WalletButton } from '../../components/wallet';
 import { BountyGrid } from '../../components/bounty';
 import useBackend from '../../hooks/useBackend';
+import { isAuthenticated, getCurrentUser } from '../../utils/auth';
 
 /**
  * Feature Card Component
@@ -108,6 +110,9 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { getRecentBounties } = useBackend();
   
+  const authenticated = isAuthenticated();
+  const user = getCurrentUser();
+  
   const [stats, setStats] = useState({
     totalBounties: 0,
     activeBounties: 0,
@@ -117,6 +122,11 @@ const HomePage = () => {
   
   const [featuredBounties, setFeaturedBounties] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleGitHubLogin = () => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888';
+    window.location.href = `${API_BASE_URL}/api/auth/github`;
+  };
 
   // Load stats and featured bounties
   useEffect(() => {
@@ -231,47 +241,104 @@ const HomePage = () => {
               >
                 Discover and complete bounties on the Stellar network. Earn XLM while building the future of decentralized finance.
               </Typography>
+              
+              {/* CTA Buttons */}
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  startIcon={<ExploreIcon />}
-                  onClick={() => navigate('/ExploreBounties')}
-                  sx={{
-                    bgcolor: 'white',
-                    color: 'primary.main',
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.9)',
-                    },
-                    borderRadius: 2,
-                    py: 1.5,
-                    px: 4,
-                  }}
-                >
-                  Explore Bounties
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  startIcon={<AddIcon />}
-                  onClick={() => navigate('/NewBounty')}
-                  sx={{
-                    borderColor: 'white',
-                    color: 'white',
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderColor: 'white',
-                      borderWidth: 2,
-                      bgcolor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                    borderRadius: 2,
-                    py: 1.5,
-                    px: 4,
-                  }}
-                >
-                  Create Bounty
-                </Button>
+                {authenticated ? (
+                  <>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<AddIcon />}
+                      onClick={() => navigate('/NewBounty')}
+                      sx={{
+                        bgcolor: 'white',
+                        color: 'primary.main',
+                        '&:hover': {
+                          bgcolor: 'rgba(255, 255, 255, 0.9)',
+                        },
+                        borderRadius: 2,
+                        py: 1.5,
+                        px: 4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Create Bounty
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<ExploreIcon />}
+                      onClick={() => navigate('/ExploreBounties')}
+                      sx={{
+                        borderColor: 'white',
+                        color: 'white',
+                        '&:hover': {
+                          borderColor: 'white',
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                        borderRadius: 2,
+                        py: 1.5,
+                        px: 4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Explore Bounties
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<GitHubIcon />}
+                      onClick={handleGitHubLogin}
+                      sx={{
+                        bgcolor: '#24292e',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: '#1a1e22',
+                        },
+                        borderRadius: 2,
+                        py: 1.5,
+                        px: 4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Sign in with GitHub
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<ExploreIcon />}
+                      onClick={() => navigate('/ExploreBounties')}
+                      sx={{
+                        borderColor: 'white',
+                        color: 'white',
+                        '&:hover': {
+                          borderColor: 'white',
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                        borderRadius: 2,
+                        py: 1.5,
+                        px: 4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Explore Bounties
+                    </Button>
+                  </>
+                )}
               </Stack>
+              
+              {authenticated && user && (
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 3, opacity: 0.9, color: '#FFFFFF' }}
+                >
+                  Welcome back, <strong>@{user.github || 'User'}</strong>! 👋
+                </Typography>
+              )}
             </Grid>
           </Grid>
         </Container>

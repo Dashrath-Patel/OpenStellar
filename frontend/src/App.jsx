@@ -14,6 +14,10 @@ import InProgress from './pages/in_progress/InProgressPage';
 import MyBounties from './pages/my_bounties/MyBountiesPage';
 import Settings from './pages/settings/SettingsPage';
 import MuiDemoPage from './pages/demo/MuiDemoPage';
+import ReposShowcasePage from './pages/repos/ReposShowcasePage';
+
+// Auth pages
+import AuthCallback from './pages/auth/AuthCallback';
 
 // Old pages (kept for detail views temporarily)
 import PreviewNewBounty from './pages/new_bounty/PreviewNewBounty';
@@ -34,6 +38,8 @@ export default function App() {
       <Routes>
         <Route path='/' element={<HomePage />} />
         <Route path='/demo' element={<MuiDemoPage />} />
+        <Route path='/auth/callback' element={<AuthCallback />} />
+        <Route path='/repos' element={<ReposShowcasePage />} />
         <Route path='/NewBounty' element={<NewBounty />} />
         <Route path='/NewBounty/Preview' element={<PreviewNewBounty />} />
         <Route path='/ExploreBounties' element={<ExploreBounty />} />

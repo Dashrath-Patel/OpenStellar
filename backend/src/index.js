@@ -5,25 +5,23 @@ const { connect } = require('./db');
 const cors = require('cors');
 const path = require('path');
 
-dotenv.config();
-if (process.env.NODE_ENV == ('development' || 'development ')) {
-    dotenv.config({ path: path.join(__dirname, '..', '.env.development') });
-} else if (process.env.NODE_ENV == ('production' || 'production ')) {
-    dotenv.config({ path: path.join(__dirname, '..', '.env') });
-} else if (process.env.NODE_ENV == ('staging' || 'staging ')) {
-    dotenv.config({ path: path.join(__dirname, '..', '.env.staging') });
-}
+// Load environment variables from .env file
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 app.use(express.json());
 app.use(cors({origin: '*'}));
 
+// Routes
 app.use('/api/', require('./routes/app.routes'));
+app.use('/api/bounty', require('./routes/bounty'));
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/project', require('./routes/project'));
+app.use('/api/github', require('./routes/github'));
+app.use('/api/bounty-issues', require('./routes/bountyIssues'));
 
 app.get('/api/', (request, response) => {
     response.send('OpenStellar Alive Check');
 });
-
-app.use('/api/bounty', require('./routes/bounty'));
 
 app.listen(process.env.PORT, async function () {
     console.log(`Ready to go. listening on port:[${process.env.PORT}] on pid:[${process.pid}]`);

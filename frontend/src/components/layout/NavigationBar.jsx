@@ -17,6 +17,9 @@ import {
   useMediaQuery,
   useTheme,
   Container,
+  Menu,
+  MenuItem,
+  Chip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
@@ -25,8 +28,13 @@ import WorkIcon from '@mui/icons-material/Work';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LogoutIcon from '@mui/icons-material/Logout';
+import FolderIcon from '@mui/icons-material/Folder';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ThemeToggle from '../../theme/ThemeToggle';
+import { isAuthenticated, getCurrentUser, logout } from '../../utils/auth';
 
 /**
  * Navigation items configuration
@@ -34,10 +42,11 @@ import ThemeToggle from '../../theme/ThemeToggle';
 const navItems = [
   { label: 'Home', path: '/', icon: <HomeIcon /> },
   { label: 'Explore Bounties', path: '/ExploreBounties', icon: <ExploreIcon /> },
+  { label: 'My Repositories', path: '/repos', icon: <FolderIcon />, requireAuth: true },
   { label: 'New Bounty', path: '/NewBounty', icon: <AddCircleIcon /> },
   { label: 'In Progress', path: '/InProgress', icon: <WorkIcon /> },
   { label: 'My Bounties', path: '/MyBounties', icon: <WorkIcon /> },
-  { label: 'Settings', path: '/Settings', icon: <SettingsIcon /> },
+  { label: 'Profile Settings', path: '/Settings', icon: <SettingsIcon /> },
 ];
 
 /**
@@ -49,10 +58,34 @@ const navItems = [
  */
 const NavigationBar = ({ walletButton = null }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Get authentication state
+  const authenticated = isAuthenticated();
+  const user = getCurrentUser();
+
+  // User menu handlers
+  const handleUserMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleUserMenuClose();
+    logout();
+  };
+
+  const handleGitHubLogin = () => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888';
+    window.location.href = `${API_BASE_URL}/api/auth/github`;
+  };
 
   // Toggle mobile drawer
   const handleDrawerToggle = () => {
@@ -105,7 +138,9 @@ const NavigationBar = ({ walletButton = null }) => {
       </Box>
       <Divider />
       <List>
-        {navItems.map((item) => (
+        {navItems
+          .filter(item => !item.requireAuth || authenticated)
+          .map((item) => (
           <ListItem key={item.path} disablePadding>
             <ListItemButton
               onClick={() => handleNavigation(item.path)}
@@ -211,7 +246,10 @@ const NavigationBar = ({ walletButton = null }) => {
             {/* Desktop navigation */}
             {!isMobile && (
               <Box sx={{ flexGrow: 1, display: 'flex', ml: 4, gap: 1 }}>
-                {navItems.slice(0, -1).map((item) => (
+                {navItems
+                  .filter(item => !item.requireAuth || authenticated)
+                  .slice(0, -1)
+                  .map((item) => (
                   <Button
                     key={item.path}
                     onClick={() => handleNavigation(item.path)}
@@ -235,14 +273,69 @@ const NavigationBar = ({ walletButton = null }) => {
             {/* Right side actions */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <ThemeToggle />
-              {!isMobile && (
-                <IconButton
-                  onClick={() => navigate('/Settings')}
-                  sx={{ color: 'primary.main' }}
+              
+              {/* GitHub Authentication */}
+              {authenticated ? (
+                <>
+                  <IconButton
+                    onClick={handleUserMenuOpen}
+                    sx={{ p: 0 }}
+                  >
+                    <Avatar
+                      src={user?.avatarUrl || `https://github.com/${user?.github}.png`}
+                      alt={user?.github || 'User'}
+                      sx={{ width: 32, height: 32 }}
+                    >
+                      {user?.github?.charAt(0).toUpperCase() || 'U'}
+                    </Avatar>
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleUserMenuClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                  >
+                    <MenuItem onClick={() => { handleUserMenuClose(); navigate('/Settings'); }}>
+                      <ListItemIcon>
+                        <AccountCircleIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Profile Settings</ListItemText>
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem onClick={handleLogout}>
+                      <ListItemIcon>
+                        <LogoutIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Logout</ListItemText>
+                    </MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                <Button
+                  variant="contained"
+                  startIcon={<GitHubIcon />}
+                  onClick={handleGitHubLogin}
+                  size="small"
+                  sx={{
+                    backgroundColor: '#24292e',
+                    color: 'white',
+                    textTransform: 'none',
+                    '&:hover': {
+                      backgroundColor: '#1a1e22',
+                    },
+                  }}
                 >
-                  <SettingsIcon />
-                </IconButton>
+                  {isMobile ? 'Login' : 'Sign in with GitHub'}
+                </Button>
               )}
+              
               {walletButton}
             </Box>
           </Toolbar>
