@@ -131,8 +131,9 @@ const NavigationBar = ({ walletButton = null }) => {
         >
           <RocketLaunchIcon sx={{ color: 'white', fontSize: 24 }} />
         </Box>
-        <Typography variant="h6" fontWeight={700} color="primary">
-          OpenStellar
+        <Typography variant="h6" fontWeight={700}>
+          <Box component="span" sx={{ color: 'primary.main' }}>Open</Box>
+          <Box component="span" sx={{ color: 'secondary.main' }}>Stellar</Box>
         </Typography>
       </Box>
       <Divider />
@@ -233,12 +234,12 @@ const NavigationBar = ({ walletButton = null }) => {
               <Typography
                 variant="h6"
                 fontWeight={700}
-                color="primary"
                 sx={{
                   display: { xs: 'none', sm: 'block' },
                 }}
               >
-                OpenStellar
+                <Box component="span" sx={{ color: 'primary.main' }}>Open</Box>
+                <Box component="span" sx={{ color: 'secondary.main' }}>Stellar</Box>
               </Typography>
             </Box>
 
