@@ -5,16 +5,50 @@ const StellarSdk = require('@stellar/stellar-sdk');
  * Handles XLM transfers on the Stellar network
  */
 
-// Configure Stellar SDK
-const NETWORK = process.env.STELLAR_NETWORK || 'testnet'; // 'testnet' or 'mainnet'
-const HORIZON_URL = NETWORK === 'mainnet' 
-    ? 'https://horizon.stellar.org'
-    : 'https://horizon-testnet.stellar.org';
+// Network configuration
+const getNetworkConfig = (network = null) => {
+    const targetNetwork = network || process.env.STELLAR_NETWORK || 'testnet';
+    
+    if (targetNetwork === 'mainnet') {
+        return {
+            horizonUrl: 'https://horizon.stellar.org',
+            passphrase: StellarSdk.Networks.PUBLIC,
+            name: 'mainnet'
+        };
+    } else {
+        return {
+            horizonUrl: 'https://horizon-testnet.stellar.org',
+            passphrase: StellarSdk.Networks.TESTNET,
+            name: 'testnet'
+        };
+    }
+};
 
-const server = new StellarSdk.Horizon.Server(HORIZON_URL);
-StellarSdk.Networks[NETWORK.toUpperCase()] = NETWORK === 'mainnet'
-    ? StellarSdk.Networks.PUBLIC
-    : StellarSdk.Networks.TESTNET;
+// Get initial network config
+const initialConfig = getNetworkConfig();
+const NETWORK = initialConfig.name;
+const HORIZON_URL = initialConfig.horizonUrl;
+
+// Create server instance (will be recreated when network changes)
+let server = new StellarSdk.Horizon.Server(HORIZON_URL);
+
+/**
+ * Get or create a server instance for a specific network
+ * @param {string} network - 'mainnet' or 'testnet'
+ * @returns {Object} Server instance and network config
+ */
+function getServerForNetwork(network = null) {
+    const config = getNetworkConfig(network);
+    
+    // Create a new server instance for this network
+    const networkServer = new StellarSdk.Horizon.Server(config.horizonUrl);
+    
+    return {
+        server: networkServer,
+        passphrase: config.passphrase,
+        network: config.name
+    };
+}
 
 /**
  * Send XLM payment from one account to another
@@ -22,12 +56,20 @@ StellarSdk.Networks[NETWORK.toUpperCase()] = NETWORK === 'mainnet'
  * @param {string} recipientPublicKey - Public key of the recipient (developer)
  * @param {string|number} amount - Amount of XLM to send
  * @param {string} memo - Optional memo for the transaction
+ * @param {string} network - Optional network ('mainnet' or 'testnet'). Defaults to env setting.
  * @returns {Promise<Object>} Transaction result with hash
  */
-async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '') {
+async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '', network = null) {
     try {
+        // Get network-specific server and config
+        const networkInfo = getServerForNetwork(network);
+        const txServer = networkInfo.server;
+        const networkPassphrase = networkInfo.passphrase;
+        const networkName = networkInfo.network;
+        
         console.log('\n💰 Initiating Stellar Payment...');
-        console.log(`   Network: ${NETWORK}`);
+        console.log(`   Network: ${networkName}`);
+        console.log(`   Horizon: ${networkInfo.server.serverURL}`);
         console.log(`   Amount: ${amount} XLM`);
         console.log(`   To: ${recipientPublicKey}`);
 
@@ -43,13 +85,13 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
         console.log(`   From: ${senderPublicKey}`);
 
         // Load sender account
-        const senderAccount = await server.loadAccount(senderPublicKey);
+        const senderAccount = await txServer.loadAccount(senderPublicKey);
         console.log('   ✅ Sender account loaded');
 
-        // Build transaction
+        // Build transaction with proper network passphrase
         const transaction = new StellarSdk.TransactionBuilder(senderAccount, {
             fee: StellarSdk.BASE_FEE,
-            networkPassphrase: StellarSdk.Networks[NETWORK.toUpperCase()]
+            networkPassphrase: networkPassphrase
         })
             .addOperation(
                 StellarSdk.Operation.payment({
@@ -74,7 +116,7 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
         console.log('   ✅ Transaction signed');
 
         // Submit transaction
-        const transactionResult = await server.submitTransaction(builtTransaction);
+        const transactionResult = await txServer.submitTransaction(builtTransaction);
         console.log('   ✅ Transaction submitted successfully!');
         console.log(`   TX Hash: ${transactionResult.hash}`);
 
@@ -86,7 +128,7 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
             from: senderPublicKey,
             to: recipientPublicKey,
             amount: amount,
-            network: NETWORK
+            network: networkName
         };
 
     } catch (error) {
@@ -113,11 +155,15 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
 /**
  * Check account balance
  * @param {string} publicKey - Public key to check
+ * @param {string} network - Optional network ('mainnet' or 'testnet')
  * @returns {Promise<string>} XLM balance
  */
-async function getBalance(publicKey) {
+async function getBalance(publicKey, network = null) {
     try {
-        const account = await server.loadAccount(publicKey);
+        const networkInfo = getServerForNetwork(network);
+        const txServer = networkInfo.server;
+        
+        const account = await txServer.loadAccount(publicKey);
         const xlmBalance = account.balances.find(b => b.asset_type === 'native');
         return xlmBalance ? xlmBalance.balance : '0';
     } catch (error) {
@@ -129,11 +175,15 @@ async function getBalance(publicKey) {
 /**
  * Verify if an account exists
  * @param {string} publicKey - Public key to verify
+ * @param {string} network - Optional network ('mainnet' or 'testnet')
  * @returns {Promise<boolean>} True if account exists
  */
-async function accountExists(publicKey) {
+async function accountExists(publicKey, network = null) {
     try {
-        await server.loadAccount(publicKey);
+        const networkInfo = getServerForNetwork(network);
+        const txServer = networkInfo.server;
+        
+        await txServer.loadAccount(publicKey);
         return true;
     } catch (error) {
         if (error.response && error.response.status === 404) {
@@ -146,11 +196,15 @@ async function accountExists(publicKey) {
 /**
  * Get transaction details
  * @param {string} txHash - Transaction hash
+ * @param {string} network - Optional network ('mainnet' or 'testnet')
  * @returns {Promise<Object>} Transaction details
  */
-async function getTransaction(txHash) {
+async function getTransaction(txHash, network = null) {
     try {
-        const transaction = await server.transactions().transaction(txHash).call();
+        const networkInfo = getServerForNetwork(network);
+        const txServer = networkInfo.server;
+        
+        const transaction = await txServer.transactions().transaction(txHash).call();
         return transaction;
     } catch (error) {
         console.error('Failed to get transaction:', error.message);
@@ -163,6 +217,8 @@ module.exports = {
     getBalance,
     accountExists,
     getTransaction,
+    getServerForNetwork,
+    getNetworkConfig,
     NETWORK,
     HORIZON_URL
 };

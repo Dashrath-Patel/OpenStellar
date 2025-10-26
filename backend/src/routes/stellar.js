@@ -55,30 +55,42 @@ router.get('/balance', authenticateToken, async (req, res) => {
 /**
  * GET /api/stellar/balance/:publicKey
  * Get XLM balance for any public key (no auth required)
+ * Optional query param: ?network=mainnet|testnet
  */
 router.get('/balance/:publicKey', async (req, res) => {
     try {
         const { publicKey } = req.params;
+        const { network } = req.query; // Get network from query params
+
+        // Validate network parameter if provided
+        const validNetworks = ['mainnet', 'testnet'];
+        const targetNetwork = network && validNetworks.includes(network.toLowerCase()) 
+            ? network.toLowerCase() 
+            : null;
+
+        console.log(`Fetching balance for ${publicKey} on network: ${targetNetwork || 'default (from env)'}`);
 
         // Check if account exists
-        const exists = await accountExists(publicKey);
+        const exists = await accountExists(publicKey, targetNetwork);
         if (!exists) {
             return res.json({
                 success: true,
                 balance: '0',
                 exists: false,
-                message: 'Account not found on network'
+                message: 'Account not found on network',
+                network: targetNetwork || 'default'
             });
         }
 
         // Get balance
-        const balance = await getBalance(publicKey);
+        const balance = await getBalance(publicKey, targetNetwork);
 
         res.json({
             success: true,
             balance,
             publicKey,
-            exists: true
+            exists: true,
+            network: targetNetwork || 'default'
         });
 
     } catch (error) {

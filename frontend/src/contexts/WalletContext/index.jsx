@@ -111,8 +111,18 @@ export const WalletProvider = (props) => {
         try {
             console.log('💰 Fetching balance for:', address);
             
+            // Determine network from current network config
+            let networkParam = '';
+            if (currentNetwork === 169) { // Mainnet
+                networkParam = '?network=mainnet';
+            } else if (currentNetwork === 2007) { // Testnet
+                networkParam = '?network=testnet';
+            }
+            
+            console.log('Network:', activeNetworkConfig.networkName, networkParam);
+            
             // Fetch balance from our backend API which queries Stellar network
-            const response = await fetch(`http://localhost:8888/api/stellar/balance/${address}`);
+            const response = await fetch(`http://localhost:8888/api/stellar/balance/${address}${networkParam}`);
             const data = await response.json();
             
             if (data.success && data.exists) {
