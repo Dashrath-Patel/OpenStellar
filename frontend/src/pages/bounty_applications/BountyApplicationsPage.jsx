@@ -27,7 +27,8 @@ import {
     Person as PersonIcon,
     Schedule as ScheduleIcon,
     AccountBalanceWallet as WalletIcon,
-    Link as LinkIcon
+    Link as LinkIcon,
+    GitHub as GitHubIcon
 } from '@mui/icons-material';
 import NavigationBar from '../../components/layout/NavigationBar';
 import { apiCall } from '../../utils/auth';
