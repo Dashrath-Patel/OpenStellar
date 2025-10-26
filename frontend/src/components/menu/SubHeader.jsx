@@ -54,13 +54,6 @@ const SubHeader = ({ path }) => {
                 </div>
               </Link>
             </div>
-            <div className={path === 'ExploreBounties' ? 'navbar-item menu-active-item' : 'navbar-item'}>
-              <Link to='/ExploreBounties'>
-                <div className='flex gap-2 items-center'>
-                  <span>Explore Bounties</span>
-                </div>
-              </Link>
-            </div>
 
             <div className={path === 'InProgress' ? 'navbar-item menu-active-item' : 'navbar-item'}>
               <Link to='/InProgress'>

@@ -4,6 +4,7 @@ const { authenticateToken } = require('./auth');
 const BountyIssue = require('../models/bountyIssue');
 const User = require('../models/user');
 const { addGitHubComment } = require('../github');
+const { sendPayment, getBalance, accountExists } = require('../stellar/payment');
 
 /**
  * POST /api/work-submissions
@@ -200,14 +201,81 @@ router.patch('/:bountyId/approve', authenticateToken, async (req, res) => {
 
         const walletAddress = application.walletAddress;
 
-        // TODO: Release payment on Stellar blockchain
-        // For now, simulate payment release
-        const mockReleaseTxHash = `STELLAR_RELEASE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // Verify recipient account exists on Stellar network
+        const recipientExists = await accountExists(walletAddress);
+        if (!recipientExists) {
+            return res.status(400).json({
+                success: false,
+                message: 'Developer wallet address does not exist on Stellar network. Please ensure the account is created and funded.'
+            });
+        }
+
+        // Get creator's Stellar secret key from User model
+        const creatorUser = await User.findById(bounty.creatorId);
+        if (!creatorUser || !creatorUser.stellarPublicKey) {
+            return res.status(400).json({
+                success: false,
+                message: 'Creator Stellar wallet not configured'
+            });
+        }
+
+        // NOTE: In production, secret keys should be encrypted and stored securely
+        // For now, we'll use the SECRETKEY from .env (this needs to be improved for multi-user support)
+        const creatorSecretKey = process.env.SECRETKEY;
+        if (!creatorSecretKey) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: Stellar secret key not found'
+            });
+        }
+
+        // Check creator's balance before payment
+        try {
+            const creatorBalance = await getBalance(creatorUser.stellarPublicKey);
+            console.log(`   Creator balance: ${creatorBalance} XLM`);
+            
+            if (parseFloat(creatorBalance) < parseFloat(bounty.bountyAmount)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient balance. You have ${creatorBalance} XLM but need ${bounty.bountyAmount} XLM`
+                });
+            }
+        } catch (balanceError) {
+            console.error('Failed to check balance:', balanceError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to verify wallet balance'
+            });
+        }
+
+        // Execute real Stellar payment
+        let paymentResult;
+        try {
+            paymentResult = await sendPayment(
+                creatorSecretKey,
+                walletAddress,
+                bounty.bountyAmount,
+                `OpenStellar Bounty Payment - ${bounty.title}`
+            );
+            
+            console.log('✅ Stellar payment successful!');
+            console.log(`   TX Hash: ${paymentResult.txHash}`);
+            console.log(`   From: ${paymentResult.from}`);
+            console.log(`   To: ${paymentResult.to}`);
+            console.log(`   Amount: ${paymentResult.amount} XLM`);
+            
+        } catch (paymentError) {
+            console.error('❌ Stellar payment failed:', paymentError.message);
+            return res.status(500).json({
+                success: false,
+                message: `Payment failed: ${paymentError.message}`
+            });
+        }
 
         // Update bounty
         bounty.status = 'completed';
         bounty.completedAt = new Date();
-        bounty.releaseTransactionHash = mockReleaseTxHash;
+        bounty.releaseTransactionHash = paymentResult.txHash;
         if (feedback) {
             bounty.notes = (bounty.notes || '') + '\n\nCreator Feedback: ' + feedback;
         }
@@ -229,12 +297,13 @@ router.patch('/:bountyId/approve', authenticateToken, async (req, res) => {
 
 Congratulations @${developer.github}! 🎉
 
-Your work has been approved and the payment has been released!
+Your work has been approved and the payment has been released on the Stellar network!
 
 ### Payment Details:
 - **Amount:** ${bounty.bountyAmount} XLM
 - **Recipient:** ${walletAddress}
-- **Transaction:** \`${mockReleaseTxHash}\`
+- **Transaction Hash:** [\`${paymentResult.txHash}\`](https://stellar.expert/explorer/${paymentResult.network}/tx/${paymentResult.txHash})
+- **Network:** ${paymentResult.network}
 
 ${feedback ? `### Creator's Feedback:\n${feedback}\n\n` : ''}---
 
@@ -254,11 +323,11 @@ Thank you for your contribution to this bounty! 🚀
         console.log('   Bounty:', bounty._id);
         console.log('   Amount:', bounty.bountyAmount, 'XLM');
         console.log('   To:', walletAddress);
-        console.log('   TX Hash:', mockReleaseTxHash);
+        console.log('   TX Hash:', paymentResult.txHash);
 
         res.json({
             success: true,
-            message: 'Work approved and payment released!',
+            message: 'Work approved and payment released on Stellar blockchain!',
             bounty: {
                 _id: bounty._id,
                 status: bounty.status,
@@ -268,7 +337,9 @@ Thank you for your contribution to this bounty! 🚀
                 amount: bounty.bountyAmount,
                 currency: 'XLM',
                 recipient: walletAddress,
-                txHash: mockReleaseTxHash
+                txHash: paymentResult.txHash,
+                network: paymentResult.network,
+                explorerUrl: `https://stellar.expert/explorer/${paymentResult.network}/tx/${paymentResult.txHash}`
             }
         });
 
