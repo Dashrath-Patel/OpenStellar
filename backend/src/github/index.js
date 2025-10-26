@@ -331,6 +331,51 @@ Browse more bounties: [${platformUrl}/explore](${platformUrl}/explore)
 }
 
 /**
+ * Format assignment notification comment
+ * This comment is added when a developer is assigned to notify them
+ */
+function formatAssignmentNotification(assignmentData) {
+    const platformUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const submitWorkUrl = `${platformUrl}/bounty/${assignmentData.bountyId}/submit-work`;
+    
+    return `## 🎉 Congratulations @${assignmentData.developerGithub}!
+
+You have been **assigned to this bounty**! 🚀
+
+### 💰 Bounty Details:
+- **Reward:** ${assignmentData.bountyAmount} XLM
+- **Deadline:** ${assignmentData.deadline ? new Date(assignmentData.deadline).toLocaleDateString() : 'Flexible'}
+- **Status:** Funds are now **locked** on the blockchain ✅
+
+---
+
+### 📝 Next Steps:
+
+1️⃣ **Fork this repository** and create a new branch  
+2️⃣ **Work on the solution** - Implement the requirements  
+3️⃣ **Create a Pull Request** - Make sure to reference this issue (e.g., "Fixes #${assignmentData.issueNumber}")  
+4️⃣ **Submit your PR on OpenStellar**: 👉 **[Click here to submit work](${submitWorkUrl})**
+
+---
+
+### ⚠️ Important:
+- Your PR must be from this repository: **${assignmentData.repoFullName}**
+- Include tests and documentation where applicable
+- Follow the repository's contribution guidelines
+- Once the maintainer approves your PR, payment will be **automatically released** to your wallet!
+
+### 💬 Need Help?
+Comment on this issue if you have questions or need clarification.
+
+---
+
+**Payment Wallet:** \`${assignmentData.walletAddress}\`  
+**Transaction (Lock):** \`${assignmentData.lockTxHash}\`
+
+*🔒 Powered by [OpenStellar](${platformUrl}) - Secure, decentralized bounty platform*`;
+}
+
+/**
  * Get user's GitHub repositories
  * Fetches all repos where user has push access (can create issues)
  */
@@ -393,6 +438,7 @@ module.exports = {
     addLabelsToIssue,
     formatBountyIssueBody,
     formatBountyBotComment,
+    formatAssignmentNotification,
     getUserRepositories,
     hasRepoAccess
 };

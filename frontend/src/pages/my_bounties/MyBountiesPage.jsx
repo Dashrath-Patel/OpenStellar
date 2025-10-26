@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -34,6 +35,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { apiCall, isAuthenticated, getCurrentUser } from '../../utils/auth';
 
 const MyBountiesPage = () => {
+  const navigate = useNavigate();
   const { isConnected, walletAddress, connectWallet } = useCustomWallet();
   const { getRecentBounties } = useBackend();
   const [oldBounties, setOldBounties] = useState([]);
@@ -267,7 +269,7 @@ const MyBountiesPage = () => {
                       </CardContent>
 
                       <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
-                        <Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
                           {issue.githubIssueUrl && (
                             <Button 
                               size="small" 
@@ -278,6 +280,13 @@ const MyBountiesPage = () => {
                               View on GitHub
                             </Button>
                           )}
+                          <Button 
+                            size="small" 
+                            variant="outlined"
+                            onClick={() => navigate(`/bounty/${issue._id}/applications`)}
+                          >
+                            View Applications
+                          </Button>
                         </Box>
                         <IconButton
                           size="small"

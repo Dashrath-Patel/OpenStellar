@@ -135,6 +135,7 @@ const BountyDetailPage = () => {
 
     const isCreator = user && bounty.creatorId && bounty.creatorId._id === user._id;
     const canApply = user && !isCreator && bounty.status === 'open';
+    const isAssigned = user && bounty.assigneeId && bounty.assigneeId._id === user._id;
 
     // Debug logging
     console.log('Bounty Detail Debug:', {
@@ -337,7 +338,25 @@ const BountyDetailPage = () => {
                                 </Alert>
                             )}
 
-                            {bounty.status !== 'open' && !isCreator && (
+                            {/* Submit Work Button (for assigned developer) */}
+                            {isAssigned && ['in_progress', 'under_review'].includes(bounty.status) && (
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    size="large"
+                                    fullWidth
+                                    onClick={() => navigate(`/bounty/${bounty._id}/submit-work`)}
+                                    sx={{ 
+                                        py: 1.5,
+                                        fontSize: '1.1rem',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    {bounty.prUrl ? '✏️ Update Work Submission' : '📤 Submit Your Work'}
+                                </Button>
+                            )}
+
+                            {bounty.status !== 'open' && !isCreator && !isAssigned && (
                                 <Alert severity="warning">
                                     This bounty is {bounty.status.replace('_', ' ')}
                                 </Alert>

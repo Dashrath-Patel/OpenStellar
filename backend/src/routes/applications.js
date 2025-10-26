@@ -4,6 +4,7 @@ const { authenticateToken } = require('./auth');
 const Application = require('../models/application');
 const BountyIssue = require('../models/bountyIssue');
 const User = require('../models/user');
+const { addGitHubComment, formatAssignmentNotification } = require('../github');
 
 /**
  * POST /api/applications
@@ -305,6 +306,38 @@ router.patch('/:id/review', authenticateToken, async (req, res) => {
             );
 
             console.log('✅ Application accepted and funds locked:', mockLockTxHash);
+
+            // Send GitHub notification to assigned developer
+            try {
+                const creator = await User.findById(bounty.creatorId);
+                if (creator && creator.githubAccessToken) {
+                    const [owner, repo] = bounty.repoFullName.split('/');
+                    
+                    const assignmentComment = formatAssignmentNotification({
+                        bountyId: bounty._id,
+                        developerGithub: application.githubUsername,
+                        bountyAmount: bounty.bountyAmount,
+                        deadline: bounty.deadline,
+                        issueNumber: bounty.githubIssueNumber,
+                        repoFullName: bounty.repoFullName,
+                        walletAddress: application.walletAddress,
+                        lockTxHash: mockLockTxHash
+                    });
+
+                    await addGitHubComment(
+                        creator.githubAccessToken,
+                        owner,
+                        repo,
+                        bounty.githubIssueNumber,
+                        assignmentComment
+                    );
+
+                    console.log('✅ GitHub notification sent to', application.githubUsername);
+                }
+            } catch (notifError) {
+                // Don't fail the acceptance if notification fails
+                console.warn('⚠️ Failed to send GitHub notification:', notifError.message);
+            }
 
             res.json({
                 success: true,

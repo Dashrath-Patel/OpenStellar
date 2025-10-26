@@ -95,6 +95,12 @@ const bountyIssueSchema = new mongoose.Schema({
     prUrl: {
         type: String
     },
+    prSubmittedAt: {
+        type: Date
+    },
+    prMergedAt: {
+        type: Date
+    },
     
     // Metadata
     labels: [{
