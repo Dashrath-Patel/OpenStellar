@@ -99,7 +99,7 @@ export const WalletProvider = (props) => {
         }
     });
 
-    // Function to fetch account balance using proper Horizon query
+    // Function to fetch account balance from backend API (uses real Stellar network data)
     const fetchBalance = async (address) => {
         if (!address) {
             console.log('No address provided for balance fetch');
@@ -109,22 +109,30 @@ export const WalletProvider = (props) => {
         setBalanceLoading(true);
         try {
             console.log('💰 Fetching balance for:', address);
-            console.log('📡 Using Horizon:', activeNetworkConfig.horizonUrl || activeNetworkConfig.rpcUrl);
             
-            // Use proper Horizon query function
-            const nativeBalance = await fetchNativeBalance(server, address);
+            // Fetch balance from our backend API which queries Stellar network
+            const response = await fetch(`http://localhost:8888/api/stellar/balance/${address}`);
+            const data = await response.json();
             
-            setBalance(nativeBalance);
-            console.log('✅ Balance fetched:', nativeBalance, 'XLM');
+            if (data.success && data.exists) {
+                const formattedBalance = parseFloat(data.balance).toFixed(2);
+                setBalance(formattedBalance);
+                console.log('✅ Balance fetched:', formattedBalance, 'XLM');
+            } else {
+                console.log('⚠️ Account not found - may need funding on', activeNetworkConfig.networkName);
+                setBalance('0.00');
+            }
         } catch (error) {
             console.error('❌ Error fetching balance:', error);
             
-            // Provide helpful error messages
-            if (error.message.includes('not funded')) {
-                console.log('⚠️ Account not found - may need funding on', activeNetworkConfig.networkName);
-                setBalance('Account not funded');
-            } else {
-                console.log('⚠️ Error:', error.message);
+            // Fallback to Horizon API if backend fails
+            try {
+                console.log('🔄 Trying Horizon API fallback...');
+                const nativeBalance = await fetchNativeBalance(server, address);
+                setBalance(nativeBalance);
+                console.log('✅ Balance fetched from Horizon:', nativeBalance, 'XLM');
+            } catch (horizonError) {
+                console.error('❌ Horizon fallback failed:', horizonError);
                 setBalance('Error loading balance');
             }
         } finally {
@@ -305,6 +313,30 @@ export const WalletProvider = (props) => {
             autoConnect();
         }
     }, [kit]);
+
+    // Auto-refresh balance every 30 seconds when connected
+    useEffect(() => {
+        if (!isConnected || !walletAddress) {
+            return;
+        }
+
+        console.log('⏱️ Setting up auto-refresh for balance...');
+        
+        // Refresh immediately
+        fetchBalance(walletAddress);
+
+        // Set up interval to refresh every 30 seconds
+        const refreshInterval = setInterval(() => {
+            console.log('🔄 Auto-refreshing balance...');
+            fetchBalance(walletAddress);
+        }, 30000); // 30 seconds
+
+        // Cleanup interval on unmount or when wallet disconnects
+        return () => {
+            console.log('⏹️ Stopping balance auto-refresh');
+            clearInterval(refreshInterval);
+        };
+    }, [isConnected, walletAddress]);
 
     return (
         <WalletContext.Provider value={{ 

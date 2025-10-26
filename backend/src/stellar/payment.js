@@ -60,9 +60,11 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
             )
             .setTimeout(180);
 
-        // Add memo if provided
+        // Add memo if provided (max 28 bytes for text memo)
         if (memo) {
-            transaction.addMemo(StellarSdk.Memo.text(memo));
+            // Truncate memo to 28 bytes if necessary
+            const truncatedMemo = memo.length > 28 ? memo.substring(0, 28) : memo;
+            transaction.addMemo(StellarSdk.Memo.text(truncatedMemo));
         }
 
         const builtTransaction = transaction.build();

@@ -251,11 +251,14 @@ router.patch('/:bountyId/approve', authenticateToken, async (req, res) => {
         // Execute real Stellar payment
         let paymentResult;
         try {
+            // Stellar memo has a 28-byte limit, so we'll use a shorter memo
+            const memo = `Bounty: ${bounty._id.toString().substring(0, 15)}`;
+            
             paymentResult = await sendPayment(
                 creatorSecretKey,
                 walletAddress,
                 bounty.bountyAmount,
-                `OpenStellar Bounty Payment - ${bounty.title}`
+                memo
             );
             
             console.log('✅ Stellar payment successful!');
