@@ -21,6 +21,7 @@ app.use('/api/bounty-issues', require('./routes/bountyIssues'));
 app.use('/api/applications', require('./routes/applications'));
 app.use('/api/work-submissions', require('./routes/workSubmissions'));
 app.use('/api/webhooks', require('./routes/webhooks'));
+app.use('/api/stellar', require('./routes/stellar'));
 
 app.get('/api/', (request, response) => {
     response.send('OpenStellar Alive Check');

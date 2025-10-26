@@ -330,14 +330,14 @@ const MyBountiesPage = () => {
                   Not Participating Yet
                 </Typography>
                 <Typography color="text.secondary" paragraph>
-                  Explore available bounties and start participating to earn rewards.
+                  Check out bounties in progress or create your own.
                 </Typography>
                 <Button
                   variant="contained"
-                  href="/ExploreBounties"
+                  href="/InProgress"
                   size="large"
                 >
-                  Explore Bounties
+                  View In Progress
                 </Button>
               </Paper>
             )
