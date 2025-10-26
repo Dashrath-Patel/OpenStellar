@@ -18,6 +18,7 @@ import {
   ContentCopy as CopyIcon,
   Logout as LogoutIcon,
   CheckCircle as CheckIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useCustomWallet } from '../../contexts/WalletContext';
 
@@ -34,6 +35,7 @@ const WalletButton = () => {
     balanceLoading,
     connectWallet,
     disconnectWallet,
+    fetchBalance,
   } = useCustomWallet();
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -54,6 +56,13 @@ const WalletButton = () => {
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy address:', error);
+    }
+  };
+
+  // Refresh balance
+  const handleRefreshBalance = () => {
+    if (walletAddress) {
+      fetchBalance(walletAddress);
     }
   };
 
@@ -166,9 +175,26 @@ const WalletButton = () => {
 
         {/* Balance */}
         <Box sx={{ px: 2, pb: 1.5 }}>
-          <Typography variant="caption" color="text.secondary" gutterBottom>
-            Balance
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Balance
+            </Typography>
+            <Tooltip title="Refresh balance">
+              <IconButton 
+                size="small" 
+                onClick={handleRefreshBalance}
+                disabled={balanceLoading}
+              >
+                <RefreshIcon fontSize="small" sx={{ 
+                  animation: balanceLoading ? 'spin 1s linear infinite' : 'none',
+                  '@keyframes spin': {
+                    '0%': { transform: 'rotate(0deg)' },
+                    '100%': { transform: 'rotate(360deg)' },
+                  }
+                }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
           <Chip
             label={
               balanceLoading
