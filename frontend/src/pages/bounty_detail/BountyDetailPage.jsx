@@ -340,20 +340,37 @@ const BountyDetailPage = () => {
 
                             {/* Submit Work Button (for assigned developer) */}
                             {isAssigned && ['in_progress', 'under_review'].includes(bounty.status) && (
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    size="large"
-                                    fullWidth
-                                    onClick={() => navigate(`/bounty/${bounty._id}/submit-work`)}
-                                    sx={{ 
-                                        py: 1.5,
-                                        fontSize: '1.1rem',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    {bounty.prUrl ? '✏️ Update Work Submission' : '📤 Submit Your Work'}
-                                </Button>
+                                <>
+                                    {bounty.status === 'in_progress' && bounty.prUrl && bounty.notes?.includes('Changes Requested:') && (
+                                        <Alert severity="warning" sx={{ mb: 2 }}>
+                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                🔄 Changes Requested
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                The creator has requested changes to your PR. Check the PR comments on GitHub for details.
+                                            </Typography>
+                                        </Alert>
+                                    )}
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="large"
+                                        fullWidth
+                                        onClick={() => navigate(`/bounty/${bounty._id}/submit-work`)}
+                                        sx={{ 
+                                            py: 1.5,
+                                            fontSize: '1.1rem',
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
+                                        {bounty.status === 'in_progress' && bounty.prUrl 
+                                            ? '🔄 Resubmit Updated Work' 
+                                            : bounty.status === 'under_review'
+                                            ? '👀 View Submission Status'
+                                            : '📤 Submit Your Work'
+                                        }
+                                    </Button>
+                                </>
                             )}
 
                             {bounty.status !== 'open' && !isCreator && !isAssigned && (

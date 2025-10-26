@@ -69,6 +69,8 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         // Update bounty with PR info
+        const isResubmission = !!bounty.prUrl; // Check if this is a resubmission
+        
         bounty.prUrl = pr_url;
         bounty.prNumber = prNumber;
         bounty.prSubmittedAt = new Date();
@@ -79,11 +81,41 @@ router.post('/', authenticateToken, async (req, res) => {
 
         await bounty.save();
 
-        console.log('✅ Work submitted for bounty:', bounty._id, 'PR:', pr_url);
+        // Send GitHub notification if it's a resubmission
+        if (isResubmission) {
+            const developer = await User.findById(bounty.assigneeId);
+            const creator = await User.findById(bounty.creatorId);
+
+            if (creator && creator.githubAccessToken && developer) {
+                try {
+                    const prUrlParts = pr_url.split('/');
+                    const owner = prUrlParts[3];
+                    const repo = prUrlParts[4];
+
+                    const resubmitComment = `## 🔄 Work Resubmitted
+
+Hi! @${developer.github} has updated their pull request and resubmitted the work for review.
+
+The status has been changed back to **Under Review**. Please review the latest changes when you get a chance.
+
+---
+*This is an automated message from OpenStellar*`;
+
+                    await addGitHubComment(creator.githubAccessToken, owner, repo, prNumber, resubmitComment);
+                    console.log(`✅ Resubmission notification sent to creator on PR #${prNumber}`);
+                } catch (githubError) {
+                    console.error('⚠️ Failed to send resubmission notification:', githubError.message);
+                }
+            }
+        }
+
+        console.log(`✅ Work ${isResubmission ? 'resubmitted' : 'submitted'} for bounty:`, bounty._id, 'PR:', pr_url);
 
         res.json({
             success: true,
-            message: 'Work submitted successfully. Creator will review your PR.',
+            message: isResubmission 
+                ? 'Work resubmitted successfully. Creator will review your updated PR.'
+                : 'Work submitted successfully. Creator will review your PR.',
             bounty: {
                 _id: bounty._id,
                 status: bounty.status,
@@ -186,7 +218,7 @@ router.patch('/:bountyId/approve', authenticateToken, async (req, res) => {
         const developer = await User.findById(bounty.assigneeId);
         const creator = await User.findById(bounty.creatorId);
 
-        if (bounty.prUrl && developer && creator && creator.accessToken) {
+        if (bounty.prUrl && developer && creator && creator.githubAccessToken) {
             try {
                 const prUrlParts = bounty.prUrl.split('/');
                 const owner = prUrlParts[3];
@@ -195,7 +227,7 @@ router.patch('/:bountyId/approve', authenticateToken, async (req, res) => {
 
                 const approvalComment = `## ✅ Work Approved - Payment Released!
 
-Congratulations @${developer.username}! 🎉
+Congratulations @${developer.github}! 🎉
 
 Your work has been approved and the payment has been released!
 
@@ -211,8 +243,8 @@ Thank you for your contribution to this bounty! 🚀
 ---
 *This is an automated message from OpenStellar*`;
 
-                await addGitHubComment(creator.accessToken, owner, repo, prNumber, approvalComment);
-                console.log(`✅ Approval notification sent to ${developer.username} on PR #${prNumber}`);
+                await addGitHubComment(creator.githubAccessToken, owner, repo, prNumber, approvalComment);
+                console.log(`✅ Approval notification sent to ${developer.github} on PR #${prNumber}`);
             } catch (githubError) {
                 console.error('⚠️ Failed to send approval notification:', githubError.message);
             }
@@ -302,9 +334,16 @@ router.patch('/:bountyId/request-changes', authenticateToken, async (req, res) =
         const developer = await User.findById(bounty.assigneeId);
         const creator = await User.findById(bounty.creatorId);
 
+        console.log('🔍 Checking GitHub notification requirements:');
+        console.log('   PR URL:', bounty.prUrl);
+        console.log('   Developer:', developer ? developer.github : 'NOT FOUND');
+        console.log('   Creator:', creator ? creator.github : 'NOT FOUND');
+        console.log('   Creator has token:', creator && creator.githubAccessToken ? 'YES' : 'NO');
+
         // Send GitHub notification on the PR
-        if (bounty.prUrl && developer && creator && creator.accessToken) {
+        if (bounty.prUrl && developer && creator && creator.githubAccessToken) {
             try {
+                console.log('📤 Attempting to send GitHub notification...');
                 // Extract owner, repo, and PR number from PR URL
                 // Format: https://github.com/owner/repo/pull/123
                 const prUrlParts = bounty.prUrl.split('/');
@@ -315,7 +354,7 @@ router.patch('/:bountyId/request-changes', authenticateToken, async (req, res) =
                 // Create a comment on the PR requesting changes
                 const comment = `## 🔄 Changes Requested
 
-Hi @${developer.username},
+Hi @${developer.github},
 
 The bounty creator has requested some changes to your pull request.
 
@@ -337,12 +376,15 @@ Good luck! 💪
 ---
 *This is an automated message from OpenStellar*`;
 
-                await addGitHubComment(creator.accessToken, owner, repo, prNumber, comment);
-                console.log(`✅ GitHub notification sent to ${developer.username} on PR #${prNumber}`);
+                await addGitHubComment(creator.githubAccessToken, owner, repo, prNumber, comment);
+                console.log(`✅ GitHub notification sent to ${developer.github} on PR #${prNumber}`);
             } catch (githubError) {
                 console.error('⚠️ Failed to send GitHub notification:', githubError.message);
+                console.error('⚠️ Full error:', githubError);
                 // Don't fail the whole request if GitHub notification fails
             }
+        } else {
+            console.log('⚠️ GitHub notification skipped - missing requirements');
         }
 
         console.log('✅ Changes requested for bounty:', bounty._id);
