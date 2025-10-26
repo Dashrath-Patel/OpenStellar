@@ -123,7 +123,7 @@ const BountyCard = ({ bounty }) => {
 
   // Handle card click
   const handleViewDetails = () => {
-    navigate(`/ExploreBounties/${bountyId}`);
+    navigate(`/bounty/${bountyId}`);
   };
 
   return (

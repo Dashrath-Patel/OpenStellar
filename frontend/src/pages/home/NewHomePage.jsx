@@ -269,7 +269,7 @@ const HomePage = () => {
                       variant="outlined"
                       size="large"
                       startIcon={<ExploreIcon />}
-                      onClick={() => navigate('/ExploreBounties')}
+                      onClick={() => navigate('/repos')}
                       sx={{
                         borderColor: 'white',
                         color: 'white',
@@ -283,7 +283,7 @@ const HomePage = () => {
                         fontWeight: 600,
                       }}
                     >
-                      Explore Bounties
+                      My Repositories
                     </Button>
                   </>
                 ) : (
@@ -311,7 +311,7 @@ const HomePage = () => {
                       variant="outlined"
                       size="large"
                       startIcon={<ExploreIcon />}
-                      onClick={() => navigate('/ExploreBounties')}
+                      onClick={() => navigate('/InProgress')}
                       sx={{
                         borderColor: 'white',
                         color: 'white',
@@ -325,7 +325,7 @@ const HomePage = () => {
                         fontWeight: 600,
                       }}
                     >
-                      Explore Bounties
+                      View In Progress
                     </Button>
                   </>
                 )}
@@ -424,7 +424,7 @@ const HomePage = () => {
             <Button
               variant="outlined"
               endIcon={<ExploreIcon />}
-              onClick={() => navigate('/ExploreBounties')}
+              onClick={() => navigate('/MyBounties')}
             >
               View All
             </Button>
@@ -454,10 +454,10 @@ const HomePage = () => {
           variant="contained"
           size="large"
           startIcon={<ExploreIcon />}
-          onClick={() => navigate('/ExploreBounties')}
+          onClick={() => navigate('/NewBounty')}
           sx={{ borderRadius: 2, py: 1.5, px: 4 }}
         >
-          Start Exploring
+          Create a Bounty
         </Button>
       </Paper>
     </MainLayout>

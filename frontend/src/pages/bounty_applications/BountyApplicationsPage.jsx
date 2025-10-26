@@ -27,7 +27,8 @@ import {
     Person as PersonIcon,
     Schedule as ScheduleIcon,
     AccountBalanceWallet as WalletIcon,
-    Link as LinkIcon
+    Link as LinkIcon,
+    GitHub as GitHubIcon
 } from '@mui/icons-material';
 import NavigationBar from '../../components/layout/NavigationBar';
 import { apiCall } from '../../utils/auth';
@@ -42,6 +43,10 @@ const BountyApplicationsPage = () => {
     const [reviewDialog, setReviewDialog] = useState({ open: false, application: null, action: null });
     const [reviewComment, setReviewComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [changesDialog, setChangesDialog] = useState(false);
+    const [changesFeedback, setChangesFeedback] = useState('');
+    const [approveDialog, setApproveDialog] = useState(false);
+    const [approveFeedback, setApproveFeedback] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -193,43 +198,14 @@ const BountyApplicationsPage = () => {
                                 <Button
                                     variant="contained"
                                     color="success"
-                                    onClick={async () => {
-                                        const feedback = prompt('Optional: Add feedback for the developer');
-                                        try {
-                                            const data = await apiCall(`/api/work-submissions/${bounty._id}/approve`, {
-                                                method: 'PATCH',
-                                                body: JSON.stringify({ feedback: feedback || '' })
-                                            });
-                                            if (data.success) {
-                                                alert(`✅ Work approved! Payment released: ${data.payment.txHash}`);
-                                                fetchData();
-                                            }
-                                        } catch (err) {
-                                            alert(err.message || 'Failed to approve work');
-                                        }
-                                    }}
+                                    onClick={() => setApproveDialog(true)}
                                 >
                                     ✅ Approve & Release Payment
                                 </Button>
                                 <Button
                                     variant="outlined"
                                     color="warning"
-                                    onClick={async () => {
-                                        const feedback = prompt('What changes do you need? (Required)');
-                                        if (!feedback) return;
-                                        try {
-                                            const data = await apiCall(`/api/work-submissions/${bounty._id}/request-changes`, {
-                                                method: 'PATCH',
-                                                body: JSON.stringify({ feedback })
-                                            });
-                                            if (data.success) {
-                                                alert('✅ Changes requested. Developer has been notified.');
-                                                fetchData();
-                                            }
-                                        } catch (err) {
-                                            alert(err.message || 'Failed to request changes');
-                                        }
-                                    }}
+                                    onClick={() => setChangesDialog(true)}
                                 >
                                     🔄 Request Changes
                                 </Button>
@@ -411,6 +387,121 @@ const BountyApplicationsPage = () => {
                         disabled={submitting}
                     >
                         {submitting ? <CircularProgress size={24} /> : `Confirm ${reviewDialog.action === 'accept' ? 'Accept' : 'Reject'}`}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Approve Work Dialog */}
+            <Dialog open={approveDialog} onClose={() => !submitting && setApproveDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Approve Work & Release Payment</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        This will release the locked payment to the developer's wallet.
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
+                        label="Feedback (Optional)"
+                        placeholder="Great work! Everything looks good."
+                        value={approveFeedback}
+                        onChange={(e) => setApproveFeedback(e.target.value)}
+                        disabled={submitting}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setApproveDialog(false)} disabled={submitting}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={async () => {
+                            try {
+                                setSubmitting(true);
+                                const data = await apiCall(`/api/work-submissions/${bounty._id}/approve`, {
+                                    method: 'PATCH',
+                                    body: JSON.stringify({ feedback: approveFeedback || '' })
+                                });
+                                if (data.success) {
+                                    alert(`✅ Work approved! Payment released: ${data.payment.txHash}`);
+                                    setApproveDialog(false);
+                                    setApproveFeedback('');
+                                    fetchData();
+                                } else {
+                                    alert(data.message || 'Failed to approve work');
+                                }
+                            } catch (err) {
+                                console.error('Error approving work:', err);
+                                alert(err.message || 'Failed to approve work');
+                            } finally {
+                                setSubmitting(false);
+                            }
+                        }}
+                        variant="contained"
+                        color="success"
+                        disabled={submitting}
+                    >
+                        {submitting ? <CircularProgress size={24} /> : '✅ Approve & Release Payment'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Request Changes Dialog */}
+            <Dialog open={changesDialog} onClose={() => !submitting && setChangesDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Request Changes</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Describe what changes are needed. The developer will be notified and can resubmit.
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        required
+                        multiline
+                        rows={4}
+                        label="Changes Required"
+                        placeholder="Please update the implementation to handle edge cases..."
+                        value={changesFeedback}
+                        onChange={(e) => setChangesFeedback(e.target.value)}
+                        disabled={submitting}
+                        error={!changesFeedback && submitting}
+                        helperText={!changesFeedback && submitting ? 'Feedback is required' : ''}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setChangesDialog(false)} disabled={submitting}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={async () => {
+                            if (!changesFeedback.trim()) {
+                                alert('Please provide feedback about what changes are needed');
+                                return;
+                            }
+                            try {
+                                setSubmitting(true);
+                                const data = await apiCall(`/api/work-submissions/${bounty._id}/request-changes`, {
+                                    method: 'PATCH',
+                                    body: JSON.stringify({ feedback: changesFeedback })
+                                });
+                                if (data.success) {
+                                    alert('✅ Changes requested. Developer has been notified.');
+                                    setChangesDialog(false);
+                                    setChangesFeedback('');
+                                    fetchData();
+                                } else {
+                                    alert(data.message || 'Failed to request changes');
+                                }
+                            } catch (err) {
+                                console.error('Error requesting changes:', err);
+                                alert(err.message || 'Failed to request changes');
+                            } finally {
+                                setSubmitting(false);
+                            }
+                        }}
+                        variant="contained"
+                        color="warning"
+                        disabled={submitting || !changesFeedback.trim()}
+                    >
+                        {submitting ? <CircularProgress size={24} /> : '🔄 Request Changes'}
                     </Button>
                 </DialogActions>
             </Dialog>

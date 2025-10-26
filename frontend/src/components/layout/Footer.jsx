@@ -18,7 +18,6 @@ import { useNavigate } from 'react-router-dom';
  */
 const footerLinks = {
   product: [
-    { label: 'Explore Bounties', path: '/ExploreBounties' },
     { label: 'Create Bounty', path: '/NewBounty' },
     { label: 'How It Works', path: '/#how-it-works' },
   ],

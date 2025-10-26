@@ -56,17 +56,6 @@ const Sidebar = ({ path }) => {
                 </div>
               </Link>
               <Link
-                to='/ExploreBounties'
-                className={`menu-item ${path === 'ExploreBounties'
-                  ? 'menu-active-item block transition duration-200  text-white'
-                  : 'block transition duration-200  app-gray hover:text-white'
-                  }`}
-              >
-                <div className='flex space-x-6 align-items-center'>
-                  <div className='menu-text text-lg'>Explore Bounties</div>
-                </div>
-              </Link>
-              <Link
                 to='/InProgress'
                 className={`menu-item ${path === 'InProgress'
                   ? 'menu-active-item block transition duration-200  text-white'

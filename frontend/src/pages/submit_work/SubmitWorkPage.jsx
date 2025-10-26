@@ -179,6 +179,25 @@ const SubmitWorkPage = () => {
                         </Alert>
                     )}
 
+                    {bounty?.status === 'in_progress' && bounty?.prUrl && bounty?.notes?.includes('Changes Requested:') && (
+                        <Alert severity="warning" sx={{ mb: 3 }}>
+                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                                🔄 Changes Requested
+                            </Typography>
+                            <Typography variant="body2" paragraph>
+                                The creator has requested changes to your pull request. Check the PR comments on GitHub for details.
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>What to do:</strong>
+                            </Typography>
+                            <Typography variant="body2" component="div">
+                                1. Make the requested changes in your local branch<br/>
+                                2. Commit and push to the same branch<br/>
+                                3. Click "Submit Work for Review" below to resubmit
+                            </Typography>
+                        </Alert>
+                    )}
+
                     {bounty?.status === 'completed' && (
                         <Alert severity="success" sx={{ mb: 3 }}>
                             This bounty has been completed and payment has been released! 🎉
@@ -231,7 +250,12 @@ const SubmitWorkPage = () => {
                                     startIcon={submitting ? <CircularProgress size={20} /> : <SendIcon />}
                                     sx={{ alignSelf: 'flex-start' }}
                                 >
-                                    {submitting ? 'Submitting...' : 'Submit Work for Review'}
+                                    {submitting 
+                                        ? 'Submitting...' 
+                                        : bounty?.prUrl 
+                                        ? '🔄 Resubmit Work for Review' 
+                                        : 'Submit Work for Review'
+                                    }
                                 </Button>
                             )}
 

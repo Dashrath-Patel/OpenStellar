@@ -134,9 +134,9 @@ const InProgressPage = () => {
               </Typography>
               <Button
                 variant="contained"
-                href="/ExploreBounties"
+                href="/repos"
               >
-                Explore Bounties
+                View My Repositories
               </Button>
             </Paper>
           )}
