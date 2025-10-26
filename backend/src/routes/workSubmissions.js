@@ -352,6 +352,7 @@ router.patch('/:bountyId/request-changes', authenticateToken, async (req, res) =
                 const prNumber = bounty.prNumber;
 
                 // Create a comment on the PR requesting changes
+                const platformUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
                 const comment = `## 🔄 Changes Requested
 
 Hi @${developer.github},
@@ -366,10 +367,11 @@ ${feedback}
 ### What to do next:
 1. ✏️ Make the requested changes in your local branch
 2. 📤 Push the updates to the same branch (this PR will auto-update)
-3. 🔔 I'll notify the creator when you update the PR
-4. ⏳ The status will change back to "Under Review" automatically
+3. � Go to the OpenStellar platform and click **"Resubmit Updated Work"**
+   - Direct link: ${platformUrl}/bounty/${bounty._id}/submit-work
+4. ⏳ The status will change back to "Under Review" after you resubmit
 
-**No need to create a new PR** - just update this one by pushing to the same branch!
+**No need to create a new PR** - just update this one by pushing to the same branch, then resubmit on the platform!
 
 Good luck! 💪
 
