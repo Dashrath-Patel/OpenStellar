@@ -215,7 +215,7 @@ router.patch('/:bountyId/approve', authenticateToken, async (req, res) => {
         if (!creatorUser || !creatorUser.stellarPublicKey) {
             return res.status(400).json({
                 success: false,
-                message: 'Creator Stellar wallet not configured'
+                message: 'Creator Stellar wallet not configured. Please connect your Stellar wallet on the platform before releasing payments.'
             });
         }
 

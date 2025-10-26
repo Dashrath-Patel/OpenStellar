@@ -8,6 +8,7 @@ import {
     fetchNativeBalance, 
     fetchAccountBalances 
 } from '../../lib/stellar/horizonQueries';
+import { linkStellarWallet, getAuthToken } from '../../utils/auth';
 
 
 export const WalletContext = createContext();
@@ -199,6 +200,22 @@ export const WalletProvider = (props) => {
                         
                         // Fetch balance after connecting
                         await fetchBalance(address);
+                        
+                        // Link wallet to user profile if authenticated
+                        const authToken = getAuthToken();
+                        if (authToken) {
+                            try {
+                                console.log('🔗 Linking wallet to user profile...');
+                                await linkStellarWallet(address);
+                                console.log('✅ Wallet linked to user profile successfully');
+                            } catch (linkError) {
+                                console.error('⚠️ Failed to link wallet to user profile:', linkError);
+                                // Don't block wallet connection if linking fails
+                                // User can still use the wallet, but payment release might not work
+                            }
+                        } else {
+                            console.log('⚠️ User not authenticated - wallet not linked to profile');
+                        }
                         
                         console.log('🚀 Wallet connected successfully!');
                         alert(`Wallet connected: ${address.substring(0, 10)}...`);

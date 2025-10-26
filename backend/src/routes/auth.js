@@ -131,8 +131,8 @@ router.get('/me', authenticateToken, async (req, res) => {
 router.post('/link-wallet', authenticateToken, async (req, res) => {
     const { wallet, stellarPublicKey } = req.body;
     
-    if (!wallet || !stellarPublicKey) {
-        return res.status(400).json({ error: 'Wallet and Stellar public key required' });
+    if (!stellarPublicKey) {
+        return res.status(400).json({ error: 'Stellar public key required' });
     }
     
     try {
@@ -142,7 +142,8 @@ router.post('/link-wallet', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        user.wallet = wallet;
+        // Update wallet if provided, otherwise use stellarPublicKey for both
+        user.wallet = wallet || stellarPublicKey;
         user.stellarPublicKey = stellarPublicKey;
         await user.save();
         
