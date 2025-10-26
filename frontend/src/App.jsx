@@ -8,7 +8,6 @@ import ScrollToTopBtn from './components/menu/ScrollToTop';
 
 // New MUI-based pages
 import HomePage from './pages/home/NewHomePage';
-import NewBounty from './pages/new_bounty/NewBountyPage';
 import InProgress from './pages/in_progress/InProgressPage';
 import MyBounties from './pages/my_bounties/MyBountiesPage';
 import Settings from './pages/settings/SettingsPage';
@@ -21,8 +20,7 @@ import SubmitWorkPage from './pages/submit_work/SubmitWorkPage';
 // Auth pages
 import AuthCallback from './pages/auth/AuthCallback';
 
-// Old pages (kept for detail views temporarily)
-import PreviewNewBounty from './pages/new_bounty/PreviewNewBounty';
+// Old pages (kept for detail views)
 import InBountyListing from './pages/in_progress/InBountyListing';
 import MyBountiesListing from './pages/my_bounties/MyBountiesListing';
 
@@ -44,8 +42,9 @@ export default function App() {
         <Route path='/bounty/:id' element={<BountyDetailPage />} />
         <Route path='/bounty/:id/applications' element={<BountyApplicationsPage />} />
         <Route path='/bounty/:id/submit-work' element={<SubmitWorkPage />} />
-        <Route path='/NewBounty' element={<NewBounty />} />
-        <Route path='/NewBounty/Preview' element={<PreviewNewBounty />} />
+        {/* Redirect old bounty creation route to new repos page */}
+        <Route path='/NewBounty' element={<Navigate to='/repos' replace />} />
+        <Route path='/NewBounty/*' element={<Navigate to='/repos' replace />} />
         <Route path='/InProgress' element={<InProgress />} />
         <Route path='/InProgress/:id' element={<InBountyListing />} />
         <Route path='/MyBounties' element={<MyBounties />} />

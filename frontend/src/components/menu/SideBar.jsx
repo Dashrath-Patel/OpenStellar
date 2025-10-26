@@ -45,14 +45,14 @@ const Sidebar = ({ path }) => {
           <nav className='pb-4'>
             <>
               <Link
-                to='/NewBounty'
-                className={`menu-item ${path === 'NewBounty'
+                to='/repos'
+                className={`menu-item ${path === 'repos'
                   ? 'menu-active-item block transition duration-200  text-white'
                   : 'block transition duration-200  app-gray hover:text-white'
                   }`}
               >
                 <div className='flex space-x-6 align-items-center'>
-                  <div className='menu-text text-lg'>New Bounty</div>
+                  <div className='menu-text text-lg'>My Repositories</div>
                 </div>
               </Link>
               <Link

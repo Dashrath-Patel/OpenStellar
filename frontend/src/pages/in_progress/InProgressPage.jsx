@@ -12,54 +12,73 @@ import {
 import { MainLayout } from '../../components/layout';
 import { BountyGrid } from '../../components/bounty';
 import { useCustomWallet } from '../../contexts/WalletContext';
-import useBackend from '../../hooks/useBackend';
+import { getAuthToken } from '../../utils/auth';
 import WorkIcon from '@mui/icons-material/Work';
 
 const InProgressPage = () => {
   const { isConnected, walletAddress, connectWallet } = useCustomWallet();
-  const { getRecentBounties } = useBackend();
-  const [bounties, setBounties] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchBounties = async () => {
+    const fetchApplications = async () => {
       setLoading(true);
       try {
-        const data = await getRecentBounties();
-        if (data) {
-          setBounties(data);
+        const token = getAuthToken();
+        if (!token) {
+          console.log('No auth token found');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost:8888/api/applications/my', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success && data.applications) {
+          setApplications(data.applications);
         }
       } catch (error) {
-        console.error('Failed to load bounties:', error);
+        console.error('Failed to load applications:', error);
       } finally {
         setLoading(false);
       }
     };
     
     if (isConnected) {
-      fetchBounties();
+      fetchApplications();
     } else {
       setLoading(false);
     }
   }, [isConnected]);
 
-  // Filter bounties where user is participating
-  const inProgressBounties = bounties.filter(bounty => {
-    // Check if user has submitted work or is participating
-    // This assumes bounty has participants array or similar structure
-    return bounty.participants?.some(p => p.address === walletAddress) ||
-           bounty.submissions?.some(s => s.submitter === walletAddress);
-  });
-
-  // Filter by status
-  const activeBounties = inProgressBounties.filter(
-    bounty => bounty.status === 'active' || bounty.status === 'in_progress'
-  );
+  // Filter active bounties (approved/accepted applications where work is in progress)
+  const activeBounties = applications.filter(app => 
+    app.status === 'approved' && 
+    app.bountyIssueId && 
+    (app.bountyIssueId.status === 'in_progress' || app.bountyIssueId.status === 'open')
+  ).map(app => ({
+    ...app.bountyIssueId,
+    applicationId: app._id,
+    applicationStatus: app.status
+  }));
   
-  const submittedBounties = inProgressBounties.filter(
-    bounty => bounty.submissions?.some(s => s.submitter === walletAddress && s.status === 'pending')
-  );
+  // Filter submitted bounties (bounties with submitted work under review or completed)
+  const submittedBounties = applications.filter(app =>
+    app.status === 'approved' &&
+    app.bountyIssueId &&
+    (app.bountyIssueId.status === 'under_review' || app.bountyIssueId.status === 'completed')
+  ).map(app => ({
+    ...app.bountyIssueId,
+    applicationId: app._id,
+    applicationStatus: app.status
+  }));
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -72,7 +91,7 @@ const InProgressPage = () => {
       case 1:
         return submittedBounties;
       default:
-        return inProgressBounties;
+        return activeBounties;
     }
   };
 
@@ -115,7 +134,6 @@ const InProgressPage = () => {
             >
               <Tab label={`Active (${activeBounties.length})`} />
               <Tab label={`Submitted (${submittedBounties.length})`} />
-              <Tab label={`All (${inProgressBounties.length})`} />
             </Tabs>
           </Paper>
 
@@ -130,7 +148,6 @@ const InProgressPage = () => {
               <Typography color="text.secondary" paragraph>
                 {tabValue === 0 && "You're not currently working on any bounties."}
                 {tabValue === 1 && "You haven't submitted any work yet."}
-                {tabValue === 2 && "You're not participating in any bounties."}
               </Typography>
               <Button
                 variant="contained"

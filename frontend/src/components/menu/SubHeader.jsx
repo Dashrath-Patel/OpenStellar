@@ -47,10 +47,10 @@ const SubHeader = ({ path }) => {
             </div>
 
             {/* </Link> */}
-            <div className={path === 'NewBounty' ? 'navbar-item menu-active-item' : 'navbar-item'}>
-              <Link to='/NewBounty'>
+            <div className={path === 'repos' ? 'navbar-item menu-active-item' : 'navbar-item'}>
+              <Link to='/repos'>
                 <div className='flex gap-2 items-center'>
-                  <span>New Bounty</span>
+                  <span>My Repositories</span>
                 </div>
               </Link>
             </div>

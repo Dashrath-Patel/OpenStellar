@@ -317,6 +317,19 @@ export const WalletProvider = (props) => {
                     // Fetch balance on auto-reconnect
                     await fetchBalance(address);
                     
+                    // Link wallet to user profile if authenticated (in case it wasn't linked before)
+                    const authToken = getAuthToken();
+                    if (authToken) {
+                        try {
+                            console.log('🔗 Auto-linking wallet to user profile...');
+                            await linkStellarWallet(address);
+                            console.log('✅ Wallet auto-linked to user profile successfully');
+                        } catch (linkError) {
+                            console.error('⚠️ Failed to auto-link wallet:', linkError);
+                            // Don't block if linking fails - it might already be linked
+                        }
+                    }
+                    
                     console.log('Auto-connected successfully');
                 }
             } catch (error) {

@@ -331,6 +331,57 @@ router.get('/public/:id', async (req, res) => {
 });
 
 /**
+ * GET /api/bounty-issues/stats
+ * Get platform-wide statistics (PUBLIC - no auth required)
+ * Note: This route MUST come before /:id route to avoid matching 'stats' as an ID
+ */
+router.get('/stats', async (req, res) => {
+    try {
+        // Get all bounties
+        const allBounties = await BountyIssue.find({});
+        
+        // Calculate stats
+        const totalBounties = allBounties.length;
+        
+        // Active bounties (open and in_progress)
+        const activeBounties = allBounties.filter(b => 
+            b.status === 'open' || b.status === 'in_progress'
+        ).length;
+        
+        // Total rewards paid (completed bounties)
+        const completedBounties = allBounties.filter(b => b.status === 'completed');
+        const totalRewards = completedBounties.reduce((sum, b) => sum + (b.bountyAmount || 0), 0);
+        
+        // Active users (unique creators and assignees)
+        const creators = new Set(allBounties.map(b => b.creatorId?.toString()).filter(Boolean));
+        const assignees = new Set(allBounties.map(b => b.assigneeId?.toString()).filter(Boolean));
+        const activeUsers = new Set([...creators, ...assignees]).size;
+        
+        // Get total users from database
+        const totalUsers = await User.countDocuments({});
+        
+        res.json({
+            success: true,
+            stats: {
+                totalBounties,
+                activeBounties,
+                totalRewards: Math.round(totalRewards * 100) / 100, // Round to 2 decimals
+                activeUsers: activeUsers || totalUsers, // Use active users or total users as fallback
+                completedBounties: completedBounties.length,
+                totalUsers
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch statistics',
+            error: error.message
+        });
+    }
+});
+
+/**
  * GET /api/bounty-issues/:id
  * Get single bounty issue (AUTHENTICATED)
  */

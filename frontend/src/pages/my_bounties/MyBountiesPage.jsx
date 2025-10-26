@@ -21,6 +21,10 @@ import {
   DialogContent,
   DialogActions,
   DialogContentText,
+  Avatar,
+  AvatarGroup,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import { MainLayout } from '../../components/layout';
 import { BountyGrid } from '../../components/bounty';
@@ -32,6 +36,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PeopleIcon from '@mui/icons-material/People';
 import { apiCall, isAuthenticated, getCurrentUser } from '../../utils/auth';
 
 const MyBountiesPage = () => {
@@ -40,6 +45,7 @@ const MyBountiesPage = () => {
   const { getRecentBounties } = useBackend();
   const [oldBounties, setOldBounties] = useState([]);
   const [bountyIssues, setBountyIssues] = useState([]);
+  const [bountyApplications, setBountyApplications] = useState({});
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -68,6 +74,21 @@ const MyBountiesPage = () => {
         const response = await apiCall('/api/bounty-issues?created_by_me=true');
         if (response.success) {
           setBountyIssues(response.issues);
+          
+          // Fetch applications for each bounty
+          const appsMap = {};
+          for (const issue of response.issues) {
+            try {
+              const appsResponse = await apiCall(`/api/applications/bounty/${issue._id}`);
+              if (appsResponse.success) {
+                appsMap[issue._id] = appsResponse.applications;
+              }
+            } catch (error) {
+              console.error(`Failed to fetch applications for bounty ${issue._id}:`, error);
+              appsMap[issue._id] = [];
+            }
+          }
+          setBountyApplications(appsMap);
         }
       }
     } catch (error) {
@@ -265,6 +286,42 @@ const MyBountiesPage = () => {
                               ))}
                             </Stack>
                           </Box>
+
+                          {/* Participants Section */}
+                          {bountyApplications[issue._id] && bountyApplications[issue._id].length > 0 && (
+                            <>
+                              <Divider sx={{ my: 1 }} />
+                              <Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  <PeopleIcon fontSize="small" color="action" />
+                                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                    Participants ({bountyApplications[issue._id].filter(app => app.status === 'approved').length})
+                                  </Typography>
+                                </Box>
+                                <AvatarGroup max={5} sx={{ justifyContent: 'flex-start' }}>
+                                  {bountyApplications[issue._id]
+                                    .filter(app => app.status === 'approved')
+                                    .map((app, idx) => (
+                                      <Tooltip 
+                                        key={idx} 
+                                        title={`${app.applicantId?.github || 'Unknown'} - ${app.status === 'approved' ? 'Working' : app.status}`}
+                                      >
+                                        <Avatar
+                                          alt={app.applicantId?.github}
+                                          src={app.applicantId?.avatar || `https://github.com/${app.applicantId?.github}.png`}
+                                          sx={{ width: 32, height: 32 }}
+                                        />
+                                      </Tooltip>
+                                    ))}
+                                </AvatarGroup>
+                                {bountyApplications[issue._id].filter(app => app.status === 'pending').length > 0 && (
+                                  <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
+                                    {bountyApplications[issue._id].filter(app => app.status === 'pending').length} pending application(s)
+                                  </Typography>
+                                )}
+                              </Box>
+                            </>
+                          )}
                         </Stack>
                       </CardContent>
 

@@ -108,7 +108,7 @@ const CategoryChip = ({ icon, label, count }) => {
 const HomePage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { getRecentBounties } = useBackend();
+  const { getRecentBounties, getStats } = useBackend();
   
   const authenticated = isAuthenticated();
   const user = getCurrentUser();
@@ -132,20 +132,14 @@ const HomePage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Fetch real stats from backend
+        const platformStats = await getStats();
+        setStats(platformStats);
+        
+        // Fetch recent bounties for featured section
         const bounties = await getRecentBounties();
         
         if (bounties && bounties.length > 0) {
-          // Calculate stats
-          const activeBounties = bounties.filter(b => b.status === 'open').length;
-          const totalRewards = bounties.reduce((sum, b) => sum + (b.payAmount || 0), 0);
-          
-          setStats({
-            totalBounties: bounties.length,
-            activeBounties,
-            totalRewards: Math.round(totalRewards),
-            activeUsers: bounties.length * 2, // Estimate
-          });
-          
           // Get featured bounties (first 3 open bounties)
           const featured = bounties
             .filter(b => b.status === 'open')
@@ -247,25 +241,6 @@ const HomePage = () => {
                 {authenticated ? (
                   <>
                     <Button
-                      variant="contained"
-                      size="large"
-                      startIcon={<AddIcon />}
-                      onClick={() => navigate('/NewBounty')}
-                      sx={{
-                        bgcolor: 'white',
-                        color: 'primary.main',
-                        '&:hover': {
-                          bgcolor: 'rgba(255, 255, 255, 0.9)',
-                        },
-                        borderRadius: 2,
-                        py: 1.5,
-                        px: 4,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Create Bounty
-                    </Button>
-                    <Button
                       variant="outlined"
                       size="large"
                       startIcon={<ExploreIcon />}
@@ -339,6 +314,111 @@ const HomePage = () => {
                   Welcome back, <strong>@{user.github || 'User'}</strong>! 👋
                 </Typography>
               )}
+            </Grid>
+            
+            {/* GitHub Logo - Right Side */}
+            <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  position: 'relative',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {/* Animated background circles */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    width: 300,
+                    height: 300,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(255, 255, 255, 0.05)',
+                    animation: 'pulse 3s ease-in-out infinite',
+                    '@keyframes pulse': {
+                      '0%, 100%': {
+                        transform: 'scale(1)',
+                        opacity: 0.5,
+                      },
+                      '50%': {
+                        transform: 'scale(1.1)',
+                        opacity: 0.3,
+                      },
+                    },
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    width: 250,
+                    height: 250,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(255, 255, 255, 0.08)',
+                    animation: 'pulse 3s ease-in-out infinite 0.5s',
+                  }}
+                />
+                
+                {/* GitHub Icon Container */}
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: 200,
+                    height: 200,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                      boxShadow: '0 12px 48px rgba(0, 0, 0, 0.4)',
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    },
+                  }}
+                >
+                  <GitHubIcon
+                    sx={{
+                      fontSize: 120,
+                      color: 'white',
+                      filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))',
+                    }}
+                  />
+                </Box>
+                
+                {/* Decorative elements */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 20,
+                    right: 20,
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    animation: 'float 4s ease-in-out infinite',
+                    '@keyframes float': {
+                      '0%, 100%': { transform: 'translateY(0px)' },
+                      '50%': { transform: 'translateY(-20px)' },
+                    },
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 30,
+                    left: 30,
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(255, 255, 255, 0.15)',
+                    animation: 'float 3s ease-in-out infinite 1s',
+                  }}
+                />
+              </Box>
             </Grid>
           </Grid>
         </Container>
@@ -454,10 +534,10 @@ const HomePage = () => {
           variant="contained"
           size="large"
           startIcon={<ExploreIcon />}
-          onClick={() => navigate('/NewBounty')}
+          onClick={() => navigate('/repos')}
           sx={{ borderRadius: 2, py: 1.5, px: 4 }}
         >
-          Create a Bounty
+          Explore Bounties
         </Button>
       </Paper>
     </MainLayout>

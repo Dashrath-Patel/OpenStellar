@@ -470,6 +470,33 @@ const useBackend = () => {
         return -2;
     };
 
+    const getStats = async () => {
+        try {
+            const res = await fetch('http://localhost:8888/api/bounty-issues/stats', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const resData = await res.json();
+            if (resData.success) {
+                return resData.stats;
+            } else {
+                console.error('Failed to fetch stats:', resData.message);
+            }
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+
+        return {
+            totalBounties: 0,
+            activeBounties: 0,
+            totalRewards: 0,
+            activeUsers: 0
+        };
+    };
+
     return {
         getUser, 
         setUser, 
@@ -489,7 +516,9 @@ const useBackend = () => {
         
         createWork, 
         getWorks, 
-        getWork, 
+        getWork,
+        
+        getStats,
     };
 };
 

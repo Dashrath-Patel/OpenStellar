@@ -19,7 +19,7 @@ const BannerBody = () => (
                 </Reveal>
                 <Reveal className='onStep' keyframes={fadeInUp} delay={600} duration={900} triggerOnce>
           <div className='mainside mt-4 flex sm:justify-center'>
-                        <Link to='/NewBounty'>Create Bounty</Link>
+                        <Link to='/repos'>Create Bounty</Link>
                     </div>
                 </Reveal>
                 <div className='mb-sm-30'></div>
