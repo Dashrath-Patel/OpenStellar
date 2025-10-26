@@ -155,7 +155,12 @@ const BountyDetailPage = () => {
                     {/* Header */}
                     <Box sx={{ mb: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                            <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary">
+                            <Typography 
+                                variant="h4" 
+                                component="h1" 
+                                fontWeight="bold" 
+                                sx={{ color: (theme) => theme.palette.text.primary }}
+                            >
                                 {bounty.title}
                             </Typography>
                             <Chip 
@@ -205,10 +210,22 @@ const BountyDetailPage = () => {
                         <Grid item xs={12} md={8}>
                             {/* Description */}
                             <Box sx={{ mb: 4 }}>
-                                <Typography variant="h6" gutterBottom fontWeight="bold" color="text.primary">
+                                <Typography 
+                                    variant="h6" 
+                                    gutterBottom 
+                                    fontWeight="bold" 
+                                    sx={{ color: (theme) => theme.palette.text.primary }}
+                                >
                                     📝 Description
                                 </Typography>
-                                <Typography variant="body1" color="text.primary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
+                                <Typography 
+                                    variant="body1" 
+                                    sx={{ 
+                                        whiteSpace: 'pre-wrap', 
+                                        lineHeight: 1.8,
+                                        color: (theme) => theme.palette.text.primary 
+                                    }}
+                                >
                                     {bounty.description}
                                 </Typography>
                             </Box>
@@ -216,7 +233,12 @@ const BountyDetailPage = () => {
                             {/* Required Skills */}
                             {bounty.skills && bounty.skills.length > 0 && (
                                 <Box sx={{ mb: 4 }}>
-                                    <Typography variant="h6" gutterBottom fontWeight="bold" color="text.primary">
+                                    <Typography 
+                                        variant="h6" 
+                                        gutterBottom 
+                                        fontWeight="bold" 
+                                        sx={{ color: (theme) => theme.palette.text.primary }}
+                                    >
                                         🛠️ Required Skills
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
