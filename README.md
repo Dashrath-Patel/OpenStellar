@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Dashrath-Patel/OpenStellar/main/frontend/public/images/banner/openstellar-banner.png" alt="OpenStellar Banner" width="800"/>
   
   # 🌟 OpenStellar
   
