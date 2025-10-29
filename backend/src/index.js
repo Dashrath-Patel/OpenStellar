@@ -29,5 +29,6 @@ app.get('/api/', (request, response) => {
 
 app.listen(process.env.PORT, async function () {
     console.log(`Ready to go. listening on port:[${process.env.PORT}] on pid:[${process.pid}]`);
+    console.log(`FRONTEND_URL: ${process.env.FRONTEND_URL || 'NOT SET - using localhost fallback'}`);
     await connect();
 });
