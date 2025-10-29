@@ -295,16 +295,16 @@ const MyBountiesPage = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                   <PeopleIcon fontSize="small" color="action" />
                                   <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                                    Participants ({bountyApplications[issue._id].filter(app => app.status === 'approved').length})
+                                    Participants ({bountyApplications[issue._id].filter(app => app.status === 'accepted').length})
                                   </Typography>
                                 </Box>
                                 <AvatarGroup max={5} sx={{ justifyContent: 'flex-start' }}>
                                   {bountyApplications[issue._id]
-                                    .filter(app => app.status === 'approved')
+                                    .filter(app => app.status === 'accepted')
                                     .map((app, idx) => (
                                       <Tooltip 
                                         key={idx} 
-                                        title={`${app.applicantId?.github || 'Unknown'} - ${app.status === 'approved' ? 'Working' : app.status}`}
+                                        title={`${app.applicantId?.github || 'Unknown'} - ${app.status === 'accepted' ? 'Working' : app.status}`}
                                       >
                                         <Avatar
                                           alt={app.applicantId?.github}
@@ -314,9 +314,9 @@ const MyBountiesPage = () => {
                                       </Tooltip>
                                     ))}
                                 </AvatarGroup>
-                                {bountyApplications[issue._id].filter(app => app.status === 'pending').length > 0 && (
+                                {bountyApplications[issue._id].filter(app => app.status === 'pending_approval').length > 0 && (
                                   <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
-                                    {bountyApplications[issue._id].filter(app => app.status === 'pending').length} pending application(s)
+                                    {bountyApplications[issue._id].filter(app => app.status === 'pending_approval').length} pending application(s)
                                   </Typography>
                                 )}
                               </Box>

@@ -41,7 +41,10 @@ const InProgressPage = () => {
         });
 
         const data = await response.json();
+        console.log('Applications API Response:', data);
         if (data.success && data.applications) {
+          console.log('Applications received:', data.applications);
+          console.log('Number of applications:', data.applications.length);
           setApplications(data.applications);
         }
       } catch (error) {
@@ -59,19 +62,27 @@ const InProgressPage = () => {
   }, [isConnected]);
 
   // Filter active bounties (approved/accepted applications where work is in progress)
-  const activeBounties = applications.filter(app => 
-    app.status === 'approved' && 
-    app.bountyIssueId && 
-    (app.bountyIssueId.status === 'in_progress' || app.bountyIssueId.status === 'open')
-  ).map(app => ({
+  const activeBounties = applications.filter(app => {
+    console.log('Filtering app:', {
+      id: app._id,
+      status: app.status,
+      hasBounty: !!app.bountyIssueId,
+      bountyStatus: app.bountyIssueId?.status
+    });
+    return app.status === 'accepted' && 
+           app.bountyIssueId && 
+           (app.bountyIssueId.status === 'in_progress' || app.bountyIssueId.status === 'open');
+  }).map(app => ({
     ...app.bountyIssueId,
     applicationId: app._id,
     applicationStatus: app.status
   }));
   
+  console.log('Active bounties:', activeBounties);
+  
   // Filter submitted bounties (bounties with submitted work under review or completed)
   const submittedBounties = applications.filter(app =>
-    app.status === 'approved' &&
+    app.status === 'accepted' &&
     app.bountyIssueId &&
     (app.bountyIssueId.status === 'under_review' || app.bountyIssueId.status === 'completed')
   ).map(app => ({
