@@ -44,7 +44,7 @@ export const networkConfig = {
 };
 
 // Default network (change this to switch networks)
-export const DEFAULT_NETWORK_ID = 9000; // Local Standalone (Your custom network with 10000 XLM)
-// export const DEFAULT_NETWORK_ID = 2007; // Testnet
+// export const DEFAULT_NETWORK_ID = 9000; // Local Standalone (Your custom network with 10000 XLM)
+export const DEFAULT_NETWORK_ID = 2007; // Testnet
 // export const DEFAULT_NETWORK_ID = 2008; // Futurenet
 // export const DEFAULT_NETWORK_ID = 169; // Mainnet
