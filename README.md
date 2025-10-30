@@ -1069,7 +1069,7 @@ This project is licensed under the **GNU General Public License v3.0** - see the
 
 ### Project Links
 
-- 🌐 **Website**: [Coming Soon]
+- 🌐 **Website**: [Open Stellar](https://open-stellar.vercel.app/)
 - 💻 **GitHub**: [github.com/Dashrath-Patel/OpenStellar](https://github.com/Dashrath-Patel/OpenStellar)
 - 📧 **Email**: [Your Contact Email]
 
