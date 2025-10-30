@@ -2,7 +2,8 @@ import axios from 'axios';
 import {BountyStatus, WorkStatus} from '../../contexts/ContractContext';
 
 const useBackend = () => {
-    const BACKEND_URL = 'http://localhost:8888/api/bounty/';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888';
+    const BACKEND_URL = `${API_BASE_URL}/api/bounty/`;
 
     const getUser = async (wallet) => {
         let name = '';
@@ -472,7 +473,7 @@ const useBackend = () => {
 
     const getStats = async () => {
         try {
-            const res = await fetch('http://localhost:8888/api/bounty-issues/stats', {
+            const res = await fetch(`${API_BASE_URL}/api/bounty-issues/stats`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

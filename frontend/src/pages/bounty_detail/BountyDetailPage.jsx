@@ -27,6 +27,8 @@ import NavigationBar from '../../components/layout/NavigationBar';
 import ApplyBountyModal from '../../components/bounty/ApplyBountyModal';
 import { apiCall } from '../../utils/auth';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888';
+
 const BountyDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -44,7 +46,7 @@ const BountyDetailPage = () => {
     const fetchBountyDetails = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8888/api/bounty-issues/public/${id}`);
+            const response = await fetch(`${API_BASE_URL}/api/bounty-issues/public/${id}`);
             const data = await response.json();
 
             if (data.success) {

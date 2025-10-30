@@ -15,6 +15,8 @@ import { useCustomWallet } from '../../contexts/WalletContext';
 import { getAuthToken } from '../../utils/auth';
 import WorkIcon from '@mui/icons-material/Work';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888';
+
 const InProgressPage = () => {
   const { isConnected, walletAddress, connectWallet } = useCustomWallet();
   const [applications, setApplications] = useState([]);
@@ -32,7 +34,7 @@ const InProgressPage = () => {
           return;
         }
 
-        const response = await fetch('http://localhost:8888/api/applications/my', {
+        const response = await fetch(`${API_BASE_URL}/api/applications/my`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

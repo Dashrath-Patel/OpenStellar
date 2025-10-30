@@ -8,6 +8,8 @@ import {
     fetchNativeBalance, 
     fetchAccountBalances 
 } from '../../lib/stellar/horizonQueries';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888';
 import { linkStellarWallet, getAuthToken } from '../../utils/auth';
 
 
@@ -112,7 +114,7 @@ export const WalletProvider = (props) => {
             console.log('💰 Fetching balance for:', address);
             
             // Fetch balance from our backend API which queries Stellar network
-            const response = await fetch(`http://localhost:8888/api/stellar/balance/${address}`);
+            const response = await fetch(`${API_BASE_URL}/api/stellar/balance/${address}`);
             const data = await response.json();
             
             if (data.success && data.exists) {
