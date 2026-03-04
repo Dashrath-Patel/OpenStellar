@@ -58,8 +58,8 @@ export const WalletProvider = (props) => {
         return window.localStorage.getItem('selectedWallet');
     }
     
-    // Wallet object for legacy compatibility
-    const [walletObj, setWalletObj] = useState({
+    // Wallet object - use useMemo to ensure it updates when network changes
+    const walletObj = useMemo(() => ({
         isConnected: async() => {
             return isConnected;
         },
@@ -100,7 +100,7 @@ export const WalletProvider = (props) => {
                 throw error;
             }
         }
-    });
+    }), [kit, isConnected, activeNetworkConfig]);
 
     // Function to fetch account balance from backend API (uses real Stellar network data)
     const fetchBalance = async (address) => {
@@ -142,15 +142,6 @@ export const WalletProvider = (props) => {
             setBalanceLoading(false);
         }
     };
-
-    useEffect(() => {
-        setWalletObj((prevState) => ({
-            ...prevState,
-            isConnected: async() => {
-                return isConnected;
-            }
-        }));
-    }, [isConnected]);
 
     // Connect wallet function following official documentation
     const connectWallet = async () => {
