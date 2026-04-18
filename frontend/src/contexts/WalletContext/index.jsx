@@ -108,13 +108,17 @@ export const WalletProvider = (props) => {
             console.log('No address provided for balance fetch');
             return;
         }
-        
+
+        // Map network ID to backend network name
+        const networkParam = currentNetwork === 169 ? 'mainnet' : 'testnet';
+
         setBalanceLoading(true);
         try {
-            console.log('💰 Fetching balance for:', address);
-            
+            console.log('💰 Fetching balance for:', address, 'on network:', networkParam);
+
             // Fetch balance from our backend API which queries Stellar network
-            const response = await fetch(`${API_BASE_URL}/api/stellar/balance/${address}`);
+            // Pass the current network so backend queries the correct Horizon server
+            const response = await fetch(`${API_BASE_URL}/api/stellar/balance/${address}?network=${networkParam}`);
             const data = await response.json();
             
             if (data.success && data.exists) {
