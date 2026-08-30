@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const StellarSdk = require('@stellar/stellar-sdk');
 const { authenticateToken } = require('./auth');
 const { getBalance, accountExists } = require('../stellar/payment');
 const User = require('../models/user');
@@ -7,6 +8,7 @@ const User = require('../models/user');
 /**
  * GET /api/stellar/balance
  * Get current XLM balance for authenticated user's wallet
+ * Query params: ?network=mainnet|testnet|futurenet|standalone
  */
 router.get('/balance', authenticateToken, async (req, res) => {
     try {
@@ -20,25 +22,36 @@ router.get('/balance', authenticateToken, async (req, res) => {
         }
 
         const publicKey = user.stellarPublicKey;
+        const network = req.query.network;
+
+        // Validate public key format
+        if (!StellarSdk.StrKey.isValidEd25519PublicKey(publicKey)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Stellar public key stored on profile'
+            });
+        }
 
         // Check if account exists
-        const exists = await accountExists(publicKey);
+        const exists = await accountExists(publicKey, network);
         if (!exists) {
             return res.json({
                 success: true,
                 balance: '0',
+                network: network || 'testnet',
                 exists: false,
                 message: 'Account not found on network'
             });
         }
 
         // Get balance
-        const balance = await getBalance(publicKey);
+        const balance = await getBalance(publicKey, network);
 
         res.json({
             success: true,
             balance,
             publicKey,
+            network: network || 'testnet',
             exists: true
         });
 
@@ -55,29 +68,41 @@ router.get('/balance', authenticateToken, async (req, res) => {
 /**
  * GET /api/stellar/balance/:publicKey
  * Get XLM balance for any public key (no auth required)
+ * Query params: ?network=mainnet|testnet|futurenet|standalone
  */
 router.get('/balance/:publicKey', async (req, res) => {
     try {
         const { publicKey } = req.params;
+        const network = req.query.network;
+
+        // Validate public key format
+        if (!StellarSdk.StrKey.isValidEd25519PublicKey(publicKey)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Stellar public key format'
+            });
+        }
 
         // Check if account exists
-        const exists = await accountExists(publicKey);
+        const exists = await accountExists(publicKey, network);
         if (!exists) {
             return res.json({
                 success: true,
                 balance: '0',
+                network: network || 'testnet',
                 exists: false,
                 message: 'Account not found on network'
             });
         }
 
         // Get balance
-        const balance = await getBalance(publicKey);
+        const balance = await getBalance(publicKey, network);
 
         res.json({
             success: true,
             balance,
             publicKey,
+            network: network || 'testnet',
             exists: true
         });
 

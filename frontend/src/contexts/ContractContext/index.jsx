@@ -78,11 +78,11 @@ export const ContractProvider = ({ children }) => {
         const pubKey = await walletObj.getUserInfo();
         // console.log('pubKey:', pubKey);
 
-        const sourceAcc = await server.getAccount(pubKey);
+        const activePassphrase = networkConfig[chainId]?.networkPassphrase || StellarSdk.Networks.FUTURENET;
 
         const transaction0 = new StellarSdk.TransactionBuilder(sourceAcc, {
             fee: (baseFee === undefined || baseFee === '') ? StellarSdk.BASE_FEE : baseFee,
-            networkPassphrase: StellarSdk.Networks.FUTURENET,
+            networkPassphrase: activePassphrase,
         })
             .addOperation(operation)
             .setTimeout(StellarSdk.TimeoutInfinite /* 30 */)
@@ -99,12 +99,11 @@ export const ContractProvider = ({ children }) => {
         const txXDR = transaction.toXDR();
         // console.log('txXDR:', txXDR);
         const {signedXDR} = await walletObj.signTransaction(txXDR, {
-            network: 'FUTURENET',
-            networkPassphrase: StellarSdk.Networks.FUTURENET,
+            networkPassphrase: activePassphrase,
             accountToSign: pubKey,
         });
         const txEnvelope = StellarSdk.xdr.TransactionEnvelope.fromXDR(signedXDR, 'base64');
-        const tx = new StellarSdk.Transaction(txEnvelope, StellarSdk.Networks.FUTURENET);
+        const tx = new StellarSdk.Transaction(txEnvelope, activePassphrase);
 
         try {
             const response = await server.sendTransaction(tx);
