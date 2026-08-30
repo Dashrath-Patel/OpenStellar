@@ -58,17 +58,32 @@ export const WalletProvider = (props) => {
         return window.localStorage.getItem('selectedWallet');
     }
     
-    // Wallet object for legacy compatibility
-    const [walletObj, setWalletObj] = useState({
-        isConnected: async() => {
+    // Helper to get network string parameter for API
+    const getNetworkParam = (networkId) => {
+        switch (Number(networkId)) {
+            case 169:
+                return 'mainnet';
+            case 2008:
+                return 'futurenet';
+            case 9000:
+                return 'standalone';
+            case 2007:
+            default:
+                return 'testnet';
+        }
+    };
+
+    // Wallet object for legacy compatibility with dynamic kit and activeNetworkConfig memoization
+    const walletObj = useMemo(() => ({
+        isConnected: async () => {
             return isConnected;
         },
 
-        isAllowed: async() => {
+        isAllowed: async () => {
             return true;
         },
 
-        getUserInfo: async() => {
+        getUserInfo: async () => {
             try {
                 if (!kit) {
                     console.error('Kit not initialized');
@@ -82,13 +97,13 @@ export const WalletProvider = (props) => {
             }
         },
 
-        signTransaction: async(xdr, opts) => {
+        signTransaction: async (xdr, opts) => {
             try {
                 if (!kit) {
                     throw new Error('Kit not initialized');
                 }
                 
-                // Use the official API with correct network passphrase
+                // Use the official API with correct active network passphrase
                 const { signedTxXdr } = await kit.signTransaction(xdr, {
                     address: opts?.accountToSign,
                     networkPassphrase: opts?.networkPassphrase || activeNetworkConfig.networkPassphrase,
@@ -100,7 +115,7 @@ export const WalletProvider = (props) => {
                 throw error;
             }
         }
-    });
+    }), [kit, isConnected, activeNetworkConfig]);
 
     // Function to fetch account balance from backend API (uses real Stellar network data)
     const fetchBalance = async (address) => {
@@ -111,10 +126,11 @@ export const WalletProvider = (props) => {
         
         setBalanceLoading(true);
         try {
-            console.log('💰 Fetching balance for:', address);
+            const networkParam = getNetworkParam(currentNetwork);
+            console.log('💰 Fetching balance for:', address, 'on network:', activeNetworkConfig.networkName, `(${networkParam})`);
             
-            // Fetch balance from our backend API which queries Stellar network
-            const response = await fetch(`${API_BASE_URL}/api/stellar/balance/${address}`);
+            // Fetch balance from our backend API with network query param
+            const response = await fetch(`${API_BASE_URL}/api/stellar/balance/${address}?network=${networkParam}`);
             const data = await response.json();
             
             if (data.success && data.exists) {
@@ -130,27 +146,18 @@ export const WalletProvider = (props) => {
             
             // Fallback to Horizon API if backend fails
             try {
-                console.log('🔄 Trying Horizon API fallback...');
+                console.log('🔄 Trying Horizon API fallback for', activeNetworkConfig.networkName);
                 const nativeBalance = await fetchNativeBalance(server, address);
                 setBalance(nativeBalance);
                 console.log('✅ Balance fetched from Horizon:', nativeBalance, 'XLM');
             } catch (horizonError) {
                 console.error('❌ Horizon fallback failed:', horizonError);
-                setBalance('Error loading balance');
+                setBalance('0.00');
             }
         } finally {
             setBalanceLoading(false);
         }
     };
-
-    useEffect(() => {
-        setWalletObj((prevState) => ({
-            ...prevState,
-            isConnected: async() => {
-                return isConnected;
-            }
-        }));
-    }, [isConnected]);
 
     // Connect wallet function following official documentation
     const connectWallet = async () => {
@@ -280,22 +287,20 @@ export const WalletProvider = (props) => {
         if (networkConfig[networkId]) {
             console.log('🔄 Switching to network:', networkConfig[networkId].networkName);
             
-            // Disconnect if currently connected
-            if (isConnected) {
-                disconnectWallet();
-            }
-            
             // Update network
             setCurrentNetwork(networkId);
             window.localStorage.setItem('selectedNetwork', networkId.toString());
             
-            alert(`Switched to ${networkConfig[networkId].networkName}. Please reconnect your wallet.`);
+            // If connected, notify user without forcing full session destruction
+            if (isConnected) {
+                console.log(`Switched to ${networkConfig[networkId].networkName}. Refetching balance...`);
+            }
         } else {
             console.error('Invalid network ID:', networkId);
         }
     };
 
-    // Auto-reconnect on page load if wallet was previously connected
+    // Auto-reconnect on page load or network change if wallet was previously connected
     useEffect(() => {
         // Load saved network preference
         const savedNetwork = window.localStorage.getItem('selectedNetwork');
@@ -308,7 +313,7 @@ export const WalletProvider = (props) => {
                 const selectedWallet = getSelectedWallet();
                 
                 if (selectedWallet && kit) {
-                    console.log('Auto-connecting to:', selectedWallet);
+                    console.log('Auto-connecting to:', selectedWallet, 'on network:', activeNetworkConfig.networkName);
                     
                     await kit.setWallet(selectedWallet);
                     const { address } = await kit.getAddress();
@@ -346,15 +351,15 @@ export const WalletProvider = (props) => {
         }
     }, [kit]);
 
-    // Auto-refresh balance every 30 seconds when connected
+    // Auto-refresh balance every 30 seconds or when network changes
     useEffect(() => {
         if (!isConnected || !walletAddress) {
             return;
         }
 
-        console.log('⏱️ Setting up auto-refresh for balance...');
+        console.log('⏱️ Setting up auto-refresh for balance on network:', activeNetworkConfig.networkName);
         
-        // Refresh immediately
+        // Refresh immediately on network change or connection
         fetchBalance(walletAddress);
 
         // Set up interval to refresh every 30 seconds
@@ -363,12 +368,12 @@ export const WalletProvider = (props) => {
             fetchBalance(walletAddress);
         }, 30000); // 30 seconds
 
-        // Cleanup interval on unmount or when wallet disconnects
+        // Cleanup interval on unmount, network change, or when wallet disconnects
         return () => {
             console.log('⏹️ Stopping balance auto-refresh');
             clearInterval(refreshInterval);
         };
-    }, [isConnected, walletAddress]);
+    }, [isConnected, walletAddress, currentNetwork]);
 
     return (
         <WalletContext.Provider value={{ 

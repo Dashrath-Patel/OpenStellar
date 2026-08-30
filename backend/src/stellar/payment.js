@@ -2,19 +2,65 @@ const StellarSdk = require('@stellar/stellar-sdk');
 
 /**
  * Stellar Payment Service
- * Handles XLM transfers on the Stellar network
+ * Handles XLM transfers and account queries across Stellar networks (Mainnet, Testnet, Futurenet, Standalone)
  */
 
-// Configure Stellar SDK
-const NETWORK = process.env.STELLAR_NETWORK || 'testnet'; // 'testnet' or 'mainnet'
-const HORIZON_URL = NETWORK === 'mainnet' 
-    ? 'https://horizon.stellar.org'
-    : 'https://horizon-testnet.stellar.org';
+// Default network configuration
+const DEFAULT_NETWORK = (process.env.STELLAR_NETWORK || 'testnet').toLowerCase();
 
-const server = new StellarSdk.Horizon.Server(HORIZON_URL);
-StellarSdk.Networks[NETWORK.toUpperCase()] = NETWORK === 'mainnet'
-    ? StellarSdk.Networks.PUBLIC
-    : StellarSdk.Networks.TESTNET;
+const NETWORK_CONFIGS = {
+    mainnet: {
+        horizonUrl: 'https://horizon.stellar.org',
+        networkPassphrase: StellarSdk.Networks.PUBLIC
+    },
+    public: {
+        horizonUrl: 'https://horizon.stellar.org',
+        networkPassphrase: StellarSdk.Networks.PUBLIC
+    },
+    testnet: {
+        horizonUrl: 'https://horizon-testnet.stellar.org',
+        networkPassphrase: StellarSdk.Networks.TESTNET
+    },
+    futurenet: {
+        horizonUrl: 'https://horizon-futurenet.stellar.org',
+        networkPassphrase: StellarSdk.Networks.FUTURENET
+    },
+    standalone: {
+        horizonUrl: 'http://localhost:8000',
+        networkPassphrase: StellarSdk.Networks.STANDALONE,
+        allowHttp: true
+    }
+};
+
+/**
+ * Resolve network config and create Horizon server
+ * @param {string} [networkName] - Optional network name ('mainnet', 'testnet', 'futurenet', 'standalone')
+ * @returns {{ server: StellarSdk.Horizon.Server, network: string, networkPassphrase: string, horizonUrl: string }}
+ */
+function getNetworkDetails(networkName) {
+    const rawNetwork = (networkName || process.env.STELLAR_NETWORK || 'testnet').toLowerCase();
+    const network = rawNetwork === 'public' ? 'mainnet' : rawNetwork;
+    const config = NETWORK_CONFIGS[network] || NETWORK_CONFIGS.testnet;
+    
+    const horizonUrl = process.env.STELLAR_HORIZON_URL && (!networkName || networkName === DEFAULT_NETWORK)
+        ? process.env.STELLAR_HORIZON_URL 
+        : config.horizonUrl;
+        
+    const server = new StellarSdk.Horizon.Server(horizonUrl, {
+        allowHttp: config.allowHttp || horizonUrl.startsWith('http://')
+    });
+    
+    return {
+        server,
+        network,
+        networkPassphrase: config.networkPassphrase,
+        horizonUrl
+    };
+}
+
+// Backwards compatibility constants
+const NETWORK = DEFAULT_NETWORK;
+const HORIZON_URL = (NETWORK_CONFIGS[DEFAULT_NETWORK] || NETWORK_CONFIGS.testnet).horizonUrl;
 
 /**
  * Send XLM payment from one account to another
@@ -22,12 +68,14 @@ StellarSdk.Networks[NETWORK.toUpperCase()] = NETWORK === 'mainnet'
  * @param {string} recipientPublicKey - Public key of the recipient (developer)
  * @param {string|number} amount - Amount of XLM to send
  * @param {string} memo - Optional memo for the transaction
+ * @param {string} [networkOverride] - Optional network override ('mainnet', 'testnet', etc.)
  * @returns {Promise<Object>} Transaction result with hash
  */
-async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '') {
+async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '', networkOverride = null) {
+    const { server, network, networkPassphrase } = getNetworkDetails(networkOverride);
     try {
         console.log('\n💰 Initiating Stellar Payment...');
-        console.log(`   Network: ${NETWORK}`);
+        console.log(`   Network: ${network}`);
         console.log(`   Amount: ${amount} XLM`);
         console.log(`   To: ${recipientPublicKey}`);
 
@@ -49,7 +97,7 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
         // Build transaction
         const transaction = new StellarSdk.TransactionBuilder(senderAccount, {
             fee: StellarSdk.BASE_FEE,
-            networkPassphrase: StellarSdk.Networks[NETWORK.toUpperCase()]
+            networkPassphrase: networkPassphrase
         })
             .addOperation(
                 StellarSdk.Operation.payment({
@@ -86,7 +134,7 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
             from: senderPublicKey,
             to: recipientPublicKey,
             amount: amount,
-            network: NETWORK
+            network: network
         };
 
     } catch (error) {
@@ -111,12 +159,17 @@ async function sendPayment(senderSecretKey, recipientPublicKey, amount, memo = '
 }
 
 /**
- * Check account balance
+ * Check account balance on specified network
  * @param {string} publicKey - Public key to check
+ * @param {string} [networkOverride] - Optional network override
  * @returns {Promise<string>} XLM balance
  */
-async function getBalance(publicKey) {
+async function getBalance(publicKey, networkOverride = null) {
     try {
+        if (!StellarSdk.StrKey.isValidEd25519PublicKey(publicKey)) {
+            throw new Error('Invalid Stellar public key format');
+        }
+        const { server } = getNetworkDetails(networkOverride);
         const account = await server.loadAccount(publicKey);
         const xlmBalance = account.balances.find(b => b.asset_type === 'native');
         return xlmBalance ? xlmBalance.balance : '0';
@@ -127,12 +180,17 @@ async function getBalance(publicKey) {
 }
 
 /**
- * Verify if an account exists
+ * Verify if an account exists on specified network
  * @param {string} publicKey - Public key to verify
+ * @param {string} [networkOverride] - Optional network override
  * @returns {Promise<boolean>} True if account exists
  */
-async function accountExists(publicKey) {
+async function accountExists(publicKey, networkOverride = null) {
     try {
+        if (!StellarSdk.StrKey.isValidEd25519PublicKey(publicKey)) {
+            return false;
+        }
+        const { server } = getNetworkDetails(networkOverride);
         await server.loadAccount(publicKey);
         return true;
     } catch (error) {
@@ -144,12 +202,14 @@ async function accountExists(publicKey) {
 }
 
 /**
- * Get transaction details
+ * Get transaction details on specified network
  * @param {string} txHash - Transaction hash
+ * @param {string} [networkOverride] - Optional network override
  * @returns {Promise<Object>} Transaction details
  */
-async function getTransaction(txHash) {
+async function getTransaction(txHash, networkOverride = null) {
     try {
+        const { server } = getNetworkDetails(networkOverride);
         const transaction = await server.transactions().transaction(txHash).call();
         return transaction;
     } catch (error) {
@@ -163,6 +223,8 @@ module.exports = {
     getBalance,
     accountExists,
     getTransaction,
+    getNetworkDetails,
+    NETWORK_CONFIGS,
     NETWORK,
     HORIZON_URL
 };
